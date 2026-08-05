@@ -1,4 +1,4 @@
-import * as Progress from "@radix-ui/react-progress";
+import { useEffect } from "react";
 import { analysisStyles } from "../style/analysisStyles";
 import { useAnalysis } from "../hook/useAnalysis";
 import { useAnalysisStore } from "../store/analysisStore";
@@ -8,6 +8,8 @@ import { ChainPanel } from "./ChainPanel";
 export function AnalysisPanel({
   onError,
   onGenerated,
+  onLoaderChange,
+  onReadyChange,
   onSession,
   request,
 }: AnalysisPanelProps) {
@@ -16,17 +18,16 @@ export function AnalysisPanel({
   const status = useAnalysisStore((state) => state.status);
   const { regenerate } = useAnalysis({ onError, onGenerated, request });
 
+  useEffect(() => {
+    onReadyChange(status !== "idle" && status !== "loading");
+  }, [onReadyChange, status]);
+
+  useEffect(() => {
+    onLoaderChange?.(status === "idle" || status === "loading" ? (message ? [message] : null) : null);
+  }, [message, onLoaderChange, status]);
+
   if (status === "idle" || status === "loading" || !report) {
-    return (
-      <section aria-label="Title analysis" style={analysisStyles.panel}>
-        <div aria-live="polite" style={analysisStyles.loading}>
-          <div style={analysisStyles.loadingText}>{message}</div>
-          <Progress.Root aria-label="Generating title report" style={analysisStyles.progressRoot}>
-            <Progress.Indicator style={analysisStyles.progressIndicator} />
-          </Progress.Root>
-        </div>
-      </section>
-    );
+    return <section aria-label="Title analysis" style={analysisStyles.panel} />;
   }
 
   return (

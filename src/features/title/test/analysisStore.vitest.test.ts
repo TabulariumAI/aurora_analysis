@@ -22,7 +22,7 @@ describe("analysis store", () => {
     });
     expect(useAnalysisStore.getState().begin(request, "load")).toBe(true);
     expect(useAnalysisStore.getState()).toMatchObject({
-      message: "Retriving Indexes...",
+      message: "Retrieving Indexes...",
       operation: "load",
       status: "loading",
     });

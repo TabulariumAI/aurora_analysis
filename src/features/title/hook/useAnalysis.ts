@@ -9,7 +9,7 @@ import type {
 import { createAnalysisWorkerClient } from "../worker/analysisWorkerClient";
 
 const messages = [
-  "Retriving Indexes...",
+  "Retrieving Indexes...",
   "Analyzing Indexing...",
   "Analyzing Indexing...",
   "Generating Report..",

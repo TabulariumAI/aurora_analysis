@@ -34,7 +34,7 @@ export const useAnalysisStore = create<AnalysisStoreState>()((set, get) => ({
     if (state.request !== request || state.status === "loading") return false;
     set({
       failure: null,
-      message: "Retriving Indexes...",
+      message: "Retrieving Indexes...",
       operation,
       status: "loading",
     });
@@ -43,7 +43,7 @@ export const useAnalysisStore = create<AnalysisStoreState>()((set, get) => ({
   open(request) {
     set({
       failure: null,
-      message: "Retriving Indexes...",
+      message: "Retrieving Indexes...",
       operation: null,
       report: null,
       request,

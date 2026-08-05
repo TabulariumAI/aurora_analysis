@@ -94,6 +94,8 @@ export type AnalysisWorkerClient = {
 export type AnalysisPanelProps = {
   onError(failure: AnalysisFailure): void;
   onGenerated(): void;
+  onLoaderChange?(lines: readonly string[] | null): void;
+  onReadyChange(ready: boolean): void;
   onSession(session: string): void;
   request: AnalysisRequest;
 };

@@ -34,6 +34,7 @@ afterEach(() => {
 
 describe("AnalysisPanel", () => {
   it("renders the single-chain report without an accordion title", () => {
+    const onReadyChange = vi.fn();
     const onSession = vi.fn();
     useAnalysisStore.getState().setReady(request, prepareAnalysis([
       {
@@ -55,6 +56,7 @@ describe("AnalysisPanel", () => {
       <AnalysisPanel
         onError={vi.fn()}
         onGenerated={vi.fn()}
+        onReadyChange={onReadyChange}
         onSession={onSession}
         request={request}
       />,
@@ -68,6 +70,7 @@ describe("AnalysisPanel", () => {
       "https://www.google.com/maps?q=Main%20Chain&output=embed&maptype=roadmap",
     );
     expect(screen.getByText("Warranty Deed")).toBeVisible();
+    expect(onReadyChange).toHaveBeenLastCalledWith(true);
     fireEvent.click(screen.getByRole("button", { name: "View" }));
     expect(onSession).toHaveBeenCalledWith("session-2");
     fireEvent.click(screen.getByRole("button", { name: "Regenerate" }));
@@ -84,6 +87,7 @@ describe("AnalysisPanel", () => {
       <AnalysisPanel
         onError={vi.fn()}
         onGenerated={vi.fn()}
+        onReadyChange={vi.fn()}
         onSession={vi.fn()}
         request={request}
       />,
@@ -92,5 +96,24 @@ describe("AnalysisPanel", () => {
     expect(screen.getByRole("button", { name: "Chain One" })).toHaveAttribute("data-state", "open");
     expect(screen.getByRole("button", { name: "Chain Two" })).toHaveAttribute("data-state", "closed");
     expect(screen.getByText("(2 chains)")).toBeVisible();
+  });
+
+  it("reports pending while the title report is loading", () => {
+    const onLoaderChange = vi.fn();
+    const onReadyChange = vi.fn();
+
+    render(
+      <AnalysisPanel
+        onError={vi.fn()}
+        onGenerated={vi.fn()}
+        onLoaderChange={onLoaderChange}
+        onReadyChange={onReadyChange}
+        onSession={vi.fn()}
+        request={request}
+      />,
+    );
+
+    expect(onReadyChange).toHaveBeenLastCalledWith(false);
+    expect(onLoaderChange).toHaveBeenLastCalledWith(["Retrieving Indexes..."]);
   });
 });
