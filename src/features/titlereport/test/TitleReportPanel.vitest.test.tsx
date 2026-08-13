@@ -1,20 +1,20 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { prepareAnalysis } from "../data/analysisData";
-import { useAnalysisStore } from "../store/analysisStore";
-import type { AnalysisRequest } from "../type/analysis.types";
+import { prepareTitleReport } from "../data/titleReportData";
+import { useTitleReportStore } from "../store/titleReportStore";
+import type { TitleReportRequest } from "../type/titleReport.types";
 
 const hook = vi.hoisted(() => ({
   regenerate: vi.fn(),
 }));
 
-vi.mock("../hook/useAnalysis", () => ({
-  useAnalysis: vi.fn(() => ({ regenerate: hook.regenerate })),
+vi.mock("../hook/useTitleReport", () => ({
+  useTitleReport: vi.fn(() => ({ regenerate: hook.regenerate })),
 }));
 
-import { AnalysisPanel } from "../component/AnalysisPanel";
+import { TitleReportPanel } from "../component/TitleReportPanel";
 
-const request: AnalysisRequest = {
+const request: TitleReportRequest = {
   authToken: "token-1",
   batch: "Batch A",
   apiGatewayUrl: "https://user.example",
@@ -23,20 +23,20 @@ const request: AnalysisRequest = {
 
 beforeEach(() => {
   hook.regenerate.mockReset();
-  useAnalysisStore.getState().reset();
-  useAnalysisStore.getState().open(request);
+  useTitleReportStore.getState().reset();
+  useTitleReportStore.getState().open(request);
 });
 
 afterEach(() => {
   cleanup();
-  useAnalysisStore.getState().reset();
+  useTitleReportStore.getState().reset();
 });
 
-describe("AnalysisPanel", () => {
+describe("TitleReportPanel", () => {
   it("renders the single-chain report without an accordion title", () => {
     const onReadyChange = vi.fn();
     const onSession = vi.fn();
-    useAnalysisStore.getState().setReady(request, prepareAnalysis([
+    useTitleReportStore.getState().setReady(request, prepareTitleReport([
       {
         title: "Main Chain",
         completeness: 1,
@@ -53,17 +53,19 @@ describe("AnalysisPanel", () => {
     ], "Batch A"));
 
     render(
-      <AnalysisPanel
+      <TitleReportPanel
         onError={vi.fn()}
         onGenerated={vi.fn()}
         onReadyChange={onReadyChange}
         onSession={onSession}
         request={request}
+        titleAction={<button type="button">Close title report</button>}
       />,
     );
 
-    expect(screen.getByRole("region", { name: "Title analysis" })).toBeVisible();
+    expect(screen.getByRole("region", { name: "Title report content" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Batch A" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Close title report" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "Main Chain" })).not.toBeInTheDocument();
     expect(screen.getByTitle("Map for Main Chain")).toHaveAttribute(
       "src",
@@ -78,18 +80,19 @@ describe("AnalysisPanel", () => {
   });
 
   it("uses Radix collapsibles for multiple chains and opens the first", () => {
-    useAnalysisStore.getState().setReady(request, prepareAnalysis([
+    useTitleReportStore.getState().setReady(request, prepareTitleReport([
       { title: "Chain One", records: [] },
       { title: "Chain Two", records: [] },
     ], "Batch A"));
 
     render(
-      <AnalysisPanel
+      <TitleReportPanel
         onError={vi.fn()}
         onGenerated={vi.fn()}
         onReadyChange={vi.fn()}
         onSession={vi.fn()}
         request={request}
+        titleAction={null}
       />,
     );
 
@@ -103,13 +106,14 @@ describe("AnalysisPanel", () => {
     const onReadyChange = vi.fn();
 
     render(
-      <AnalysisPanel
+      <TitleReportPanel
         onError={vi.fn()}
         onGenerated={vi.fn()}
         onLoaderChange={onLoaderChange}
         onReadyChange={onReadyChange}
         onSession={vi.fn()}
         request={request}
+        titleAction={null}
       />,
     );
 

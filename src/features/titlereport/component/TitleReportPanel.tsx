@@ -1,22 +1,23 @@
 import { useEffect } from "react";
-import { analysisStyles } from "../style/analysisStyles";
-import { useAnalysis } from "../hook/useAnalysis";
-import { useAnalysisStore } from "../store/analysisStore";
-import type { AnalysisPanelProps } from "../type/analysis.types";
+import { titleReportStyles } from "../style/titleReportStyles";
+import { useTitleReport } from "../hook/useTitleReport";
+import { useTitleReportStore } from "../store/titleReportStore";
+import type { TitleReportPanelProps } from "../type/titleReport.types";
 import { ChainPanel } from "./ChainPanel";
 
-export function AnalysisPanel({
+export function TitleReportPanel({
   onError,
   onGenerated,
   onLoaderChange,
   onReadyChange,
   onSession,
   request,
-}: AnalysisPanelProps) {
-  const message = useAnalysisStore((state) => state.message);
-  const report = useAnalysisStore((state) => state.report);
-  const status = useAnalysisStore((state) => state.status);
-  const { regenerate } = useAnalysis({ onError, onGenerated, request });
+  titleAction,
+}: TitleReportPanelProps) {
+  const message = useTitleReportStore((state) => state.message);
+  const report = useTitleReportStore((state) => state.report);
+  const status = useTitleReportStore((state) => state.status);
+  const { regenerate } = useTitleReport({ onError, onGenerated, request });
 
   useEffect(() => {
     onReadyChange(status !== "idle" && status !== "loading");
@@ -27,30 +28,31 @@ export function AnalysisPanel({
   }, [message, onLoaderChange, status]);
 
   if (status === "idle" || status === "loading" || !report) {
-    return <section aria-label="Title analysis" style={analysisStyles.panel} />;
+    return <section aria-label="Title report content" style={titleReportStyles.panel} />;
   }
 
   return (
-    <section aria-label="Title analysis" style={analysisStyles.panel}>
-      <div style={analysisStyles.report}>
-        <header style={analysisStyles.header}>
-          <h2 style={analysisStyles.title}>{report.name}</h2>
-          <div style={analysisStyles.headerActions}>
-            <span style={analysisStyles.count}>
+    <section aria-label="Title report content" style={titleReportStyles.panel}>
+      <div style={titleReportStyles.report}>
+        <header style={titleReportStyles.header}>
+          <h2 style={titleReportStyles.title}>{report.name}</h2>
+          <div style={titleReportStyles.headerActions}>
+            <span style={titleReportStyles.count}>
               ({report.chains.length} chain{report.chains.length === 1 ? "" : "s"})
             </span>
             <button
               aria-label="Regenerate"
               onClick={() => void regenerate()}
-              style={analysisStyles.regenerate}
+              style={titleReportStyles.regenerate}
               type="button"
             >
               ↻ Regenerate
             </button>
+            {titleAction}
           </div>
         </header>
         {report.chains.length ? (
-          <div style={analysisStyles.chainList}>
+          <div style={titleReportStyles.chainList}>
             {report.chains.map((chain, index) => (
               <ChainPanel
                 chain={chain}
@@ -62,7 +64,7 @@ export function AnalysisPanel({
             ))}
           </div>
         ) : (
-          <div style={analysisStyles.empty}>No data available.</div>
+          <div style={titleReportStyles.empty}>No data available.</div>
         )}
       </div>
     </section>

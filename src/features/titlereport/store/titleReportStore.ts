@@ -1,28 +1,28 @@
 import { create } from "zustand";
 import type {
-  AnalysisFailure,
-  AnalysisOperation,
-  AnalysisReport,
-  AnalysisRequest,
-  AnalysisStatus,
-} from "../type/analysis.types";
+  TitleReportFailure,
+  TitleReportOperation,
+  TitleReport,
+  TitleReportRequest,
+  TitleReportStatus,
+} from "../type/titleReport.types";
 
-type AnalysisStoreState = {
-  failure: AnalysisFailure | null;
+type TitleReportStoreState = {
+  failure: TitleReportFailure | null;
   message: string;
-  operation: AnalysisOperation | null;
-  report: AnalysisReport | null;
-  request: AnalysisRequest | null;
-  status: AnalysisStatus;
-  begin(request: AnalysisRequest, operation: AnalysisOperation): boolean;
-  open(request: AnalysisRequest): void;
+  operation: TitleReportOperation | null;
+  report: TitleReport | null;
+  request: TitleReportRequest | null;
+  status: TitleReportStatus;
+  begin(request: TitleReportRequest, operation: TitleReportOperation): boolean;
+  open(request: TitleReportRequest): void;
   reset(): void;
-  setError(request: AnalysisRequest, failure: AnalysisFailure): void;
-  setMessage(request: AnalysisRequest, message: string): void;
-  setReady(request: AnalysisRequest, report: AnalysisReport): void;
+  setError(request: TitleReportRequest, failure: TitleReportFailure): void;
+  setMessage(request: TitleReportRequest, message: string): void;
+  setReady(request: TitleReportRequest, report: TitleReport): void;
 };
 
-export const useAnalysisStore = create<AnalysisStoreState>()((set, get) => ({
+export const useTitleReportStore = create<TitleReportStoreState>()((set, get) => ({
   failure: null,
   message: "",
   operation: null,

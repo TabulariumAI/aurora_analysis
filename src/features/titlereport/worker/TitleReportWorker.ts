@@ -1,7 +1,6 @@
-import type { MetadataPayload } from "aurorra-index";
-import type { AnalysisError } from "../type/analysis.types";
+import type { TitleReportError } from "../type/titleReport.types";
 
-type AnalysisResponse = {
+type TitleReportResponse = {
   code?: string;
   data?: unknown;
   error?: string;
@@ -10,7 +9,7 @@ type AnalysisResponse = {
   success?: boolean;
 };
 
-function responseError(response: Response, data: AnalysisResponse): AnalysisError {
+function responseError(response: Response, data: TitleReportResponse): TitleReportError {
   return {
     code: data.code ?? (response.status === 401 ? "unauthorized" : "server_error"),
     details: data,
@@ -19,11 +18,11 @@ function responseError(response: Response, data: AnalysisResponse): AnalysisErro
   };
 }
 
-async function analysisFetch(
+async function titleReportFetch(
   token: string,
   url: string,
   init: { body?: unknown; method: "GET" | "POST" },
-): Promise<AnalysisResponse> {
+): Promise<TitleReportResponse> {
   const response = await fetch(url, {
     method: init.method,
     headers: {
@@ -34,17 +33,17 @@ async function analysisFetch(
     cache: "no-store",
   });
   const raw = await response.text();
-  let payload: AnalysisResponse = {};
+  let payload: TitleReportResponse = {};
   if (raw) {
     try {
-      payload = JSON.parse(raw) as AnalysisResponse;
+      payload = JSON.parse(raw) as TitleReportResponse;
     } catch {
       throw {
         code: "parse_error",
         details: { body: raw },
         error: "Response body is not valid JSON.",
         status: response.status,
-      } satisfies AnalysisError;
+      } satisfies TitleReportError;
     }
   }
   if (
@@ -58,7 +57,7 @@ async function analysisFetch(
   return payload;
 }
 
-export function parseAnalysisData(data: unknown): unknown {
+export function parseTitleReportData(data: unknown): unknown {
   if (typeof data !== "string") return data;
   try {
     return JSON.parse(data);
@@ -67,21 +66,8 @@ export function parseAnalysisData(data: unknown): unknown {
       code: "parse_error",
       details: { data },
       error: "Response data is not valid JSON.",
-    } satisfies AnalysisError;
+    } satisfies TitleReportError;
   }
-}
-
-export async function getMetadata(
-  baseUrl: string,
-  token: string,
-  session: string,
-): Promise<MetadataPayload> {
-  const response = await analysisFetch(
-    token,
-    `${baseUrl}/v1/index/${encodeURIComponent(session)}/data`,
-    { method: "GET" },
-  );
-  return parseAnalysisData(response.data) as MetadataPayload;
 }
 
 export async function submitTitle(
@@ -90,14 +76,14 @@ export async function submitTitle(
   batch: string,
   session: string,
 ) {
-  await analysisFetch(token, `${baseUrl}/v1/title/submit`, {
+  await titleReportFetch(token, `${baseUrl}/v1/title/submit`, {
     body: { session, batch },
     method: "POST",
   });
 }
 
 export async function aggregateTitle(baseUrl: string, token: string, batch: string) {
-  await analysisFetch(
+  await titleReportFetch(
     token,
     `${baseUrl}/v1/title/${encodeURIComponent(batch)}/aggregate`,
     { body: { session: "" }, method: "POST" },
@@ -105,7 +91,7 @@ export async function aggregateTitle(baseUrl: string, token: string, batch: stri
 }
 
 export async function getTitleStatus(baseUrl: string, token: string, batch: string) {
-  const response = await analysisFetch(
+  const response = await titleReportFetch(
     token,
     `${baseUrl}/v1/title/${encodeURIComponent(batch)}/status`,
     { method: "GET" },
@@ -114,10 +100,10 @@ export async function getTitleStatus(baseUrl: string, token: string, batch: stri
 }
 
 export async function getTitleData(baseUrl: string, token: string, batch: string) {
-  const response = await analysisFetch(
+  const response = await titleReportFetch(
     token,
     `${baseUrl}/v1/title/${encodeURIComponent(batch)}/data`,
     { method: "GET" },
   );
-  return parseAnalysisData(response.data);
+  return parseTitleReportData(response.data);
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createAnalysisWorkerClient } from "../worker/analysisWorkerClient";
+import { createTitleReportWorkerClient } from "../worker/titleReportWorkerClient";
 
 function response(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -8,18 +8,16 @@ function response(data: unknown, status = 200) {
   });
 }
 
-describe("analysis worker client", () => {
-  it("uses the active title and metadata API routes", async () => {
+describe("title report worker client", () => {
+  it("uses the active title API routes", async () => {
     const fetchMock = vi.fn()
-      .mockResolvedValueOnce(response({ data: JSON.stringify({ indexes: [] }) }))
       .mockResolvedValueOnce(response({ success: true }))
       .mockResolvedValueOnce(response({ success: true, status: "processing" }))
       .mockResolvedValueOnce(response({ success: true, status: "completed" }))
       .mockResolvedValueOnce(response({ data: JSON.stringify([{ title: "Main Chain" }]) }));
     vi.stubGlobal("fetch", fetchMock);
-    const client = createAnalysisWorkerClient({ apiBaseUrl: "https://user.example" });
+    const client = createTitleReportWorkerClient({ apiBaseUrl: "https://user.example" });
 
-    await expect(client.metadata("token-1", "session/1")).resolves.toEqual({ indexes: [] });
     await client.submit("token-1", "Batch A", "session-1");
     await client.aggregate("token-1", "Batch A");
     await expect(client.status("token-1", "Batch A")).resolves.toBe(true);
@@ -31,12 +29,6 @@ describe("analysis worker client", () => {
       token: init.headers.Authorization,
       url,
     }))).toEqual([
-      {
-        body: undefined,
-        method: "GET",
-        token: "Bearer token-1",
-        url: "https://user.example/v1/index/session%2F1/data",
-      },
       {
         body: JSON.stringify({ session: "session-1", batch: "Batch A" }),
         method: "POST",
@@ -69,7 +61,7 @@ describe("analysis worker client", () => {
     vi.stubGlobal("fetch", vi.fn()
       .mockResolvedValueOnce(response({ success: false, code: "failed", message: "Title failed" }, 500))
       .mockResolvedValueOnce(new Response("not-json", { status: 200 })));
-    const client = createAnalysisWorkerClient({ apiBaseUrl: "https://user.example" });
+    const client = createTitleReportWorkerClient({ apiBaseUrl: "https://user.example" });
 
     await expect(client.status("token-1", "Batch A")).rejects.toMatchObject({
       code: "failed",

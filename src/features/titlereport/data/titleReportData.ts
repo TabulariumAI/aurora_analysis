@@ -1,14 +1,12 @@
-import { getParcelOptions } from "aurorra-index";
 import type {
-  AnalysisBadge,
-  AnalysisBatchData,
-  AnalysisChain,
-  AnalysisError,
-  AnalysisRecord,
-  AnalysisReport,
-  AnalysisRow,
-  AnalysisWorkerClient,
-} from "../type/analysis.types";
+  TitleReportBadge,
+  TitleReportChain,
+  TitleReportError,
+  TitleReportRecord,
+  TitleReport,
+  TitleReportRow,
+  TitleReportWorkerClient,
+} from "../type/titleReport.types";
 
 type SourceRecord = Record<string, unknown>;
 
@@ -62,13 +60,13 @@ function normalizeList(value: unknown): string[] {
   return [];
 }
 
-function normalizeRows(value: unknown): AnalysisRow[] {
+function normalizeRows(value: unknown): TitleReportRow[] {
   return Array.isArray(value)
-    ? value.filter((row): row is AnalysisRow => Boolean(row) && typeof row === "object")
+    ? value.filter((row): row is TitleReportRow => Boolean(row) && typeof row === "object")
     : [];
 }
 
-function completeness(value: unknown): AnalysisBadge {
+function completeness(value: unknown): TitleReportBadge {
   if (value === null || value === undefined || value === "") {
     return { background: null, color: null, text: "" };
   }
@@ -94,7 +92,7 @@ function completeness(value: unknown): AnalysisBadge {
   return { background: "#e8f5e9", color: "#166534", text: `${percent}%` };
 }
 
-function breaks(value: unknown): AnalysisBadge {
+function breaks(value: unknown): TitleReportBadge {
   const number = typeof value === "number" ? value : Number(cleanText(value));
   if (!value || value === "None" || value === "0" || number === 0) {
     return { background: "#e8f5e9", color: "#166534", text: "None" };
@@ -134,7 +132,7 @@ function formatExplanation(value: unknown): string {
     .replace(/^\s*present\s*/i, "");
 }
 
-function prepareRecord(record: SourceRecord, chainIndex: number, recordIndex: number): AnalysisRecord {
+function prepareRecord(record: SourceRecord, chainIndex: number, recordIndex: number): TitleReportRecord {
   const className = cleanText(record.class);
   const identifiers = Array.isArray(record.identifiers)
     ? record.identifiers.filter((item): item is SourceRecord => Boolean(item) && typeof item === "object")
@@ -174,7 +172,7 @@ function prepareRecord(record: SourceRecord, chainIndex: number, recordIndex: nu
   };
 }
 
-function prepareChain(source: SourceRecord, index: number): AnalysisChain {
+function prepareChain(source: SourceRecord, index: number): TitleReportChain {
   const title = cleanText(source.title) || `Chain ${index + 1}`;
   const records = Array.isArray(source.records)
     ? source.records.filter((record): record is SourceRecord => Boolean(record) && typeof record === "object")
@@ -206,8 +204,8 @@ function prepareChain(source: SourceRecord, index: number): AnalysisChain {
   };
 }
 
-export function toAnalysisError(error: unknown, message: string): AnalysisError {
-  const source = error as Partial<AnalysisError> & { message?: unknown };
+export function toTitleReportError(error: unknown, message: string): TitleReportError {
+  const source = error as Partial<TitleReportError> & { message?: unknown };
   return {
     code: source?.code,
     details: source?.details,
@@ -216,7 +214,7 @@ export function toAnalysisError(error: unknown, message: string): AnalysisError 
   };
 }
 
-export function prepareAnalysis(data: unknown, name: string): AnalysisReport {
+export function prepareTitleReport(data: unknown, name: string): TitleReport {
   const chains = Array.isArray(data)
     ? data.filter((chain): chain is SourceRecord => Boolean(chain) && typeof chain === "object")
     : [];
@@ -226,43 +224,18 @@ export function prepareAnalysis(data: unknown, name: string): AnalysisReport {
   };
 }
 
-export async function loadBatchData(
-  client: AnalysisWorkerClient,
-  token: string,
-  session: string,
-  current: unknown,
-): Promise<AnalysisBatchData> {
-  if (!session) {
-    throw { code: "SESSION_MISSING", error: "Session is missing." } satisfies AnalysisError;
-  }
-  const metadata = await client.metadata(token, session);
-  if (!Array.isArray(metadata?.indexes)) {
-    throw {
-      code: "METADATA_INDEXES_MISSING",
-      error: "Metadata or indexes are missing.",
-    } satisfies AnalysisError;
-  }
-  const parcel = getParcelOptions(metadata.indexes);
-  return {
-    address: cleanText(parcel.parcel_address),
-    current: toBatchName(current),
-    parcelId: cleanText(parcel.parcel_id),
-    reference: cleanText(parcel.parcel_reference),
-  };
-}
-
 export async function submitSession(
-  client: AnalysisWorkerClient,
+  client: TitleReportWorkerClient,
   token: string,
   batch: unknown,
   session: string,
 ): Promise<string> {
   const name = sanitizeBatchName(batch);
   if (!name) {
-    throw { code: "BATCH_NAME_REQ", error: "Batch name is required." } satisfies AnalysisError;
+    throw { code: "BATCH_NAME_REQ", error: "Batch name is required." } satisfies TitleReportError;
   }
   if (!session) {
-    throw { code: "SESSION_MISSING", error: "Session is missing." } satisfies AnalysisError;
+    throw { code: "SESSION_MISSING", error: "Session is missing." } satisfies TitleReportError;
   }
   await client.submit(token, name, session);
   return session;

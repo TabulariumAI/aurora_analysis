@@ -1,30 +1,19 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-  loadBatchData,
-  prepareAnalysis,
-  submitSession,
-} from "../data/analysisData";
-import type { AnalysisWorkerClient } from "../type/analysis.types";
+import { prepareTitleReport, submitSession } from "../data/titleReportData";
+import type { TitleReportWorkerClient } from "../type/titleReport.types";
 
-function client(): AnalysisWorkerClient {
+function client(): TitleReportWorkerClient {
   return {
     aggregate: vi.fn(),
     data: vi.fn(),
-    metadata: vi.fn(async () => ({
-      indexes: [
-        { aspect: "parcel_id", value: "PID-1" },
-        { aspect: "parcel_address", value: "10 Main Street" },
-        { aspect: "parcel_reference", value: "REF-1" },
-      ],
-    })),
     status: vi.fn(),
     submit: vi.fn(),
   };
 }
 
-describe("analysis data", () => {
+describe("title report data", () => {
   it("prepares the complete title report without generated identifiers", () => {
-    const report = prepareAnalysis([
+    const report = prepareTitleReport([
       {
         title: "  Main Chain  ",
         completeness: "82%",
@@ -100,20 +89,9 @@ describe("analysis data", () => {
     });
   });
 
-  it("loads assignment data and submits a sanitized batch", async () => {
+  it("submits a sanitized batch", async () => {
     const worker = client();
 
-    await expect(loadBatchData(
-      worker,
-      "token-1",
-      "session-1",
-      { name: "Batch A" },
-    )).resolves.toEqual({
-      address: "10 Main Street",
-      current: "Batch A",
-      parcelId: "PID-1",
-      reference: "REF-1",
-    });
     await expect(submitSession(
       worker,
       "token-1",
@@ -125,12 +103,6 @@ describe("analysis data", () => {
 
   it("rejects missing assignment inputs", async () => {
     const worker = client();
-    vi.mocked(worker.metadata).mockResolvedValue({});
-
-    await expect(loadBatchData(worker, "token-1", "session-1", null)).rejects.toMatchObject({
-      code: "METADATA_INDEXES_MISSING",
-      error: "Metadata or indexes are missing.",
-    });
     await expect(submitSession(worker, "token-1", "....", "session-1")).rejects.toMatchObject({
       code: "BATCH_NAME_REQ",
       error: "Batch name is required.",

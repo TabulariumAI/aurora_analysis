@@ -1,41 +1,34 @@
-import type { MetadataPayload } from "aurorra-index";
+import type { ReactNode } from "react";
 
-export type AnalysisError = {
+export type TitleReportError = {
   code?: string;
   details?: unknown;
   error: string;
   status?: number;
 };
 
-export type AnalysisBatchData = {
-  address: string;
-  current: string;
-  parcelId: string;
-  reference: string;
-};
-
-export type AnalysisBadge = {
+export type TitleReportBadge = {
   background: string | null;
   color: string | null;
   text: string;
 };
 
-export type AnalysisDetail = {
+export type TitleReportDetail = {
   label: string;
   value: string;
 };
 
-export type AnalysisIssue = {
+export type TitleReportIssue = {
   color: "green" | "orange" | "red";
   label: string;
   values: string[];
 };
 
-export type AnalysisRecord = {
+export type TitleReportRecord = {
   className: string;
   code: string;
   date: string;
-  details: AnalysisDetail[];
+  details: TitleReportDetail[];
   explanation: string;
   hasSession: boolean;
   id: string;
@@ -45,59 +38,59 @@ export type AnalysisRecord = {
   title: string;
 };
 
-export type AnalysisRow = Record<string, unknown>;
+export type TitleReportRow = Record<string, unknown>;
 
-export type AnalysisChain = {
-  breaks: AnalysisBadge;
-  completeness: AnalysisBadge;
-  conveyances: AnalysisRow[];
+export type TitleReportChain = {
+  breaks: TitleReportBadge;
+  completeness: TitleReportBadge;
+  conveyances: TitleReportRow[];
   earliestSource: string;
-  encumbrances: AnalysisRow[];
-  issues: AnalysisIssue[];
+  encumbrances: TitleReportRow[];
+  issues: TitleReportIssue[];
   lastUpdated: string;
   mapAddress: string;
-  mortgages: AnalysisRow[];
-  records: AnalysisRecord[];
+  mortgages: TitleReportRow[];
+  records: TitleReportRecord[];
   root: string;
   summary: string[];
   title: string;
 };
 
-export type AnalysisReport = {
-  chains: AnalysisChain[];
+export type TitleReport = {
+  chains: TitleReportChain[];
   name: string;
 };
 
-export type AnalysisOperation = "load" | "regenerate";
-export type AnalysisStatus = "idle" | "loading" | "ready" | "error";
+export type TitleReportOperation = "load" | "regenerate";
+export type TitleReportStatus = "idle" | "loading" | "ready" | "error";
 
-export type AnalysisFailure = {
-  error: AnalysisError;
-  operation: AnalysisOperation;
+export type TitleReportFailure = {
+  error: TitleReportError;
+  operation: TitleReportOperation;
 };
 
-export type AnalysisRequest = {
+export type TitleReportRequest = {
   apiGatewayUrl: string;
   authToken: string;
   batch: string;
   intervalMs: number;
 };
 
-export type AnalysisWorkerClient = {
+export type TitleReportWorkerClient = {
   aggregate(token: string, batch: string): Promise<void>;
   data(token: string, batch: string): Promise<unknown>;
-  metadata(token: string, session: string): Promise<MetadataPayload>;
   status(token: string, batch: string): Promise<boolean>;
   submit(token: string, batch: string, session: string): Promise<void>;
 };
 
-export type AnalysisPanelProps = {
-  onError(failure: AnalysisFailure): void;
+export type TitleReportPanelProps = {
+  onError(failure: TitleReportFailure): void;
   onGenerated(): void;
   onLoaderChange?(lines: readonly string[] | null): void;
   onReadyChange(ready: boolean): void;
   onSession(session: string): void;
-  request: AnalysisRequest;
+  request: TitleReportRequest;
+  titleAction: ReactNode;
 };
 
 export type WorkerConfig = {

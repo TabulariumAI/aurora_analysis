@@ -1,20 +1,18 @@
 import type {
-  AnalysisWorkerClient,
+  TitleReportWorkerClient,
   WorkerConfig,
-} from "../type/analysis.types";
+} from "../type/titleReport.types";
 import {
   aggregateTitle,
-  getMetadata,
   getTitleData,
   getTitleStatus,
   submitTitle,
-} from "./AnalysisWorker";
+} from "./TitleReportWorker";
 
-export function createAnalysisWorkerClient(config: WorkerConfig): AnalysisWorkerClient {
+export function createTitleReportWorkerClient(config: WorkerConfig): TitleReportWorkerClient {
   return {
     aggregate: (token, batch) => aggregateTitle(config.apiBaseUrl, token, batch),
     data: (token, batch) => getTitleData(config.apiBaseUrl, token, batch),
-    metadata: (token, session) => getMetadata(config.apiBaseUrl, token, session),
     status: (token, batch) => getTitleStatus(config.apiBaseUrl, token, batch),
     submit: (token, batch, session) => submitTitle(config.apiBaseUrl, token, batch, session),
   };

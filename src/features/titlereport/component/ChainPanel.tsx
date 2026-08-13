@@ -1,13 +1,13 @@
 import * as Collapsible from "@radix-ui/react-collapsible";
 import type { ReactNode } from "react";
-import { analysisStyles } from "../style/analysisStyles";
+import { titleReportStyles } from "../style/titleReportStyles";
 import type {
-  AnalysisChain,
-  AnalysisRow,
-} from "../type/analysis.types";
+  TitleReportChain,
+  TitleReportRow,
+} from "../type/titleReport.types";
 
 type ChainPanelProps = {
-  chain: AnalysisChain;
+  chain: TitleReportChain;
   first: boolean;
   multiple: boolean;
   onSession(session: string): void;
@@ -30,8 +30,8 @@ function InfoBlock({
 }) {
   return (
     <section>
-      <div style={analysisStyles.caption}>{label}</div>
-      <div style={analysisStyles.infoBody(color)}>{children}</div>
+      <div style={titleReportStyles.caption}>{label}</div>
+      <div style={titleReportStyles.infoBody(color)}>{children}</div>
     </section>
   );
 }
@@ -45,19 +45,19 @@ function DataTable({
   columns: TableColumn[];
   empty: string;
   label: string;
-  rows: AnalysisRow[];
+  rows: TitleReportRow[];
 }) {
   if (!rows.length) {
     return <InfoBlock label={label}>{empty}</InfoBlock>;
   }
   return (
-    <div style={analysisStyles.tableWrap}>
-      <table style={analysisStyles.table}>
-        <caption style={analysisStyles.tableCaption}>{label}</caption>
+    <div style={titleReportStyles.tableWrap}>
+      <table style={titleReportStyles.table}>
+        <caption style={titleReportStyles.tableCaption}>{label}</caption>
         <thead>
           <tr>
             {columns.map((column) => (
-              <th key={column.field} style={{ ...analysisStyles.tableHead, width: column.width }}>
+              <th key={column.field} style={{ ...titleReportStyles.tableHead, width: column.width }}>
                 {column.label}
               </th>
             ))}
@@ -67,7 +67,7 @@ function DataTable({
           {rows.map((row, index) => (
             <tr key={index}>
               {columns.map((column) => (
-                <td key={column.field} style={analysisStyles.tableCell}>
+                <td key={column.field} style={titleReportStyles.tableCell}>
                   {String(row[column.field] || "")}
                 </td>
               ))}
@@ -81,24 +81,24 @@ function DataTable({
 
 function ChainBody({ chain, onSession }: Pick<ChainPanelProps, "chain" | "onSession">) {
   return (
-    <div style={analysisStyles.chainBody}>
-      <div style={analysisStyles.mapCard}>
+    <div style={titleReportStyles.chainBody}>
+      <div style={titleReportStyles.mapCard}>
         <iframe
           allowFullScreen
           loading="lazy"
           referrerPolicy="no-referrer"
           src={`https://www.google.com/maps?q=${encodeURIComponent(chain.mapAddress)}&output=embed&maptype=roadmap`}
-          style={analysisStyles.mapFrame}
+          style={titleReportStyles.mapFrame}
           title={`Map for ${chain.title}`}
         />
       </div>
 
-      <div style={analysisStyles.tableWrap}>
-        <table style={analysisStyles.statusTable}>
+      <div style={titleReportStyles.tableWrap}>
+        <table style={titleReportStyles.statusTable}>
           <thead>
             <tr>
               {["Completeness", "Breaks/Gaps", "Last Updated", "Earliest Source"].map((label) => (
-                <th key={label} style={{ ...analysisStyles.tableHead, textAlign: "center" }}>
+                <th key={label} style={{ ...titleReportStyles.tableHead, textAlign: "center" }}>
                   {label}
                 </th>
               ))}
@@ -106,9 +106,9 @@ function ChainBody({ chain, onSession }: Pick<ChainPanelProps, "chain" | "onSess
           </thead>
           <tbody>
             <tr>
-              <td style={{ ...analysisStyles.tableCell, textAlign: "center" }}>
+              <td style={{ ...titleReportStyles.tableCell, textAlign: "center" }}>
                 {chain.completeness.text ? (
-                  <span style={analysisStyles.badge(
+                  <span style={titleReportStyles.badge(
                     chain.completeness.background,
                     chain.completeness.color,
                   )}>
@@ -116,9 +116,9 @@ function ChainBody({ chain, onSession }: Pick<ChainPanelProps, "chain" | "onSess
                   </span>
                 ) : null}
               </td>
-              <td style={{ ...analysisStyles.tableCell, textAlign: "center" }}>
+              <td style={{ ...titleReportStyles.tableCell, textAlign: "center" }}>
                 {chain.breaks.text ? (
-                  <span style={analysisStyles.badge(
+                  <span style={titleReportStyles.badge(
                     chain.breaks.background,
                     chain.breaks.color,
                   )}>
@@ -126,10 +126,10 @@ function ChainBody({ chain, onSession }: Pick<ChainPanelProps, "chain" | "onSess
                   </span>
                 ) : null}
               </td>
-              <td style={{ ...analysisStyles.tableCell, textAlign: "center" }}>
+              <td style={{ ...titleReportStyles.tableCell, textAlign: "center" }}>
                 {chain.lastUpdated}
               </td>
-              <td style={{ ...analysisStyles.tableCell, textAlign: "center" }}>
+              <td style={{ ...titleReportStyles.tableCell, textAlign: "center" }}>
                 {chain.earliestSource}
               </td>
             </tr>
@@ -137,14 +137,14 @@ function ChainBody({ chain, onSession }: Pick<ChainPanelProps, "chain" | "onSess
         </table>
       </div>
 
-      <div style={analysisStyles.tableWrap}>
-        <table style={analysisStyles.table}>
-          <caption style={analysisStyles.tableCaption}>Records in Chain</caption>
+      <div style={titleReportStyles.tableWrap}>
+        <table style={titleReportStyles.table}>
+          <caption style={titleReportStyles.tableCaption}>Records in Chain</caption>
           <thead>
             <tr>
-              <th style={{ ...analysisStyles.tableHead, width: "25%" }}>Title</th>
-              <th style={{ ...analysisStyles.tableHead, width: "60%" }}>Explanation</th>
-              <th style={{ ...analysisStyles.tableHead, width: "15%" }}>Action</th>
+              <th style={{ ...titleReportStyles.tableHead, width: "25%" }}>Title</th>
+              <th style={{ ...titleReportStyles.tableHead, width: "60%" }}>Explanation</th>
+              <th style={{ ...titleReportStyles.tableHead, width: "15%" }}>Action</th>
             </tr>
           </thead>
           <tbody>
@@ -160,18 +160,18 @@ function ChainBody({ chain, onSession }: Pick<ChainPanelProps, "chain" | "onSess
               return (
                 <tr key={record.id}>
                   <td style={{
-                    ...analysisStyles.tableCell,
+                    ...titleReportStyles.tableCell,
                     borderLeft: `0.15rem solid ${borderColor}`,
                     lineHeight: 1.4,
                     whiteSpace: "pre-line",
                   }}>
                     {record.date ? `${record.title}\nRecorded at ${record.date}` : record.title}
                   </td>
-                  <td style={analysisStyles.tableCell}>
-                    <div style={analysisStyles.recordCode}>{record.code}</div>
-                    <div style={analysisStyles.recordExplanation}>{explanation}</div>
+                  <td style={titleReportStyles.tableCell}>
+                    <div style={titleReportStyles.recordCode}>{record.code}</div>
+                    <div style={titleReportStyles.recordExplanation}>{explanation}</div>
                     {record.identifiers.length ? (
-                      <ul style={analysisStyles.recordList}>
+                      <ul style={titleReportStyles.recordList}>
                         {record.identifiers.map((identifier, index) => (
                           <li key={`${identifier.key}-${index}`}>
                             {identifier.key || "id"}: {identifier.value}
@@ -181,8 +181,8 @@ function ChainBody({ chain, onSession }: Pick<ChainPanelProps, "chain" | "onSess
                     ) : null}
                     {record.details.length ? (
                       <>
-                        <div style={analysisStyles.detailLabel}>Details</div>
-                        <ul style={analysisStyles.recordList}>
+                        <div style={titleReportStyles.detailLabel}>Details</div>
+                        <ul style={titleReportStyles.recordList}>
                           {record.details.map((detail) => (
                             <li key={detail.label}>{detail.label}: {detail.value}</li>
                           ))}
@@ -190,17 +190,17 @@ function ChainBody({ chain, onSession }: Pick<ChainPanelProps, "chain" | "onSess
                       </>
                     ) : null}
                   </td>
-                  <td style={analysisStyles.tableCell}>
+                  <td style={titleReportStyles.tableCell}>
                     {record.session ? (
                       <button
                         onClick={() => onSession(record.session as string)}
-                        style={analysisStyles.link}
+                        style={titleReportStyles.link}
                         type="button"
                       >
                         View
                       </button>
                     ) : (
-                      <span style={analysisStyles.recordMissing}>
+                      <span style={titleReportStyles.recordMissing}>
                         The {record.className || "record"} record is not present.
                       </span>
                     )}
@@ -227,7 +227,7 @@ function ChainBody({ chain, onSession }: Pick<ChainPanelProps, "chain" | "onSess
             {issue.values.join(" | ")}
           </InfoBlock>
         ) : (
-          <div key={issue.label} style={analysisStyles.issueEmpty}>{issue.label}</div>
+          <div key={issue.label} style={titleReportStyles.issueEmpty}>{issue.label}</div>
         )
       ))}
 
@@ -279,15 +279,15 @@ export function ChainPanel({
 }: ChainPanelProps) {
   if (!multiple) {
     return (
-      <section style={analysisStyles.chainSection}>
+      <section style={titleReportStyles.chainSection}>
         <ChainBody chain={chain} onSession={onSession} />
       </section>
     );
   }
   return (
-    <Collapsible.Root defaultOpen={first} style={analysisStyles.chainSection}>
+    <Collapsible.Root defaultOpen={first} style={titleReportStyles.chainSection}>
       <Collapsible.Trigger asChild>
-        <button style={analysisStyles.chainTrigger} type="button">{chain.title}</button>
+        <button style={titleReportStyles.chainTrigger} type="button">{chain.title}</button>
       </Collapsible.Trigger>
       <Collapsible.Content>
         <ChainBody chain={chain} onSession={onSession} />

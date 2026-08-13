@@ -3,7 +3,7 @@ import type { CSSProperties } from "react";
 const border = "1px solid #e5e7eb";
 const caption = "#18749b";
 
-export const analysisStyles = {
+export const titleReportStyles = {
   badge(background: string | null, color: string | null): CSSProperties {
     return {
       background: background || "#e5e7eb",
