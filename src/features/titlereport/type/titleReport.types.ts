@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 
 export type TitleReportError = {
   code?: string;
@@ -61,36 +60,37 @@ export type TitleReport = {
   name: string;
 };
 
-export type TitleReportOperation = "load" | "regenerate";
 export type TitleReportStatus = "idle" | "loading" | "ready" | "error";
 
 export type TitleReportFailure = {
   error: TitleReportError;
-  operation: TitleReportOperation;
+  operation: "load";
 };
 
 export type TitleReportRequest = {
   apiGatewayUrl: string;
   authToken: string;
   batch: string;
+  batchCode: string;
+  batchGroup: "pending" | "user" | "sub";
   intervalMs: number;
 };
 
 export type TitleReportWorkerClient = {
   aggregate(token: string, batch: string): Promise<void>;
   data(token: string, batch: string): Promise<unknown>;
+  generate(token: string, batch: string): Promise<void>;
   status(token: string, batch: string): Promise<boolean>;
   submit(token: string, batch: string, session: string): Promise<void>;
 };
 
 export type TitleReportPanelProps = {
-  onError(failure: TitleReportFailure): void;
+  onError?(failure: TitleReportFailure): void;
   onGenerated(): void;
   onLoaderChange?(lines: readonly string[] | null): void;
   onReadyChange(ready: boolean): void;
   onSession(session: string): void;
   request: TitleReportRequest;
-  titleAction: ReactNode;
 };
 
 export type WorkerConfig = {

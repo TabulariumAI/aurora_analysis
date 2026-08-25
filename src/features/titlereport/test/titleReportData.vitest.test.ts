@@ -6,6 +6,7 @@ function client(): TitleReportWorkerClient {
   return {
     aggregate: vi.fn(),
     data: vi.fn(),
+    generate: vi.fn(),
     status: vi.fn(),
     submit: vi.fn(),
   };

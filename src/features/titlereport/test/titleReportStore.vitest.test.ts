@@ -5,6 +5,8 @@ import type { TitleReportRequest } from "../type/titleReport.types";
 const request: TitleReportRequest = {
   authToken: "token-1",
   batch: "Batch A",
+  batchCode: "batch-a",
+  batchGroup: "user",
   apiGatewayUrl: "https://user.example",
   intervalMs: 10,
 };
@@ -20,13 +22,12 @@ describe("title report store", () => {
       request,
       status: "idle",
     });
-    expect(useTitleReportStore.getState().begin(request, "load")).toBe(true);
+    expect(useTitleReportStore.getState().begin(request)).toBe(true);
     expect(useTitleReportStore.getState()).toMatchObject({
-      message: "Retrieving Indexes...",
       operation: "load",
       status: "loading",
     });
-    expect(useTitleReportStore.getState().begin(request, "regenerate")).toBe(false);
+    expect(useTitleReportStore.getState().begin(request)).toBe(false);
 
     useTitleReportStore.getState().setReady(request, { chains: [], name: "Batch A" });
     expect(useTitleReportStore.getState()).toMatchObject({

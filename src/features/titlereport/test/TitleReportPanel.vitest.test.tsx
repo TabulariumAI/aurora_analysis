@@ -12,16 +12,36 @@ vi.mock("../hook/useTitleReport", () => ({
   useTitleReport: vi.fn(() => ({ regenerate: hook.regenerate })),
 }));
 
+const progress = vi.hoisted(() => ({
+  jobs: [] as Array<{
+    error?: string;
+    jobId: string;
+    message: string;
+    phase: "completed" | "failed" | "started";
+  }>,
+  receive: vi.fn(),
+  reset: vi.fn(),
+}));
+
+vi.mock("../../progressview/hook/useProgress", () => ({
+  useProgress: () => ({ jobs: progress.jobs, receive: progress.receive, reset: progress.reset }),
+}));
+
 import { TitleReportPanel } from "../component/TitleReportPanel";
 
 const request: TitleReportRequest = {
   authToken: "token-1",
   batch: "Batch A",
+  batchCode: "batch-a",
+  batchGroup: "user",
   apiGatewayUrl: "https://user.example",
   intervalMs: 10,
 };
 
 beforeEach(() => {
+  progress.jobs = [];
+  progress.receive.mockReset();
+  progress.reset.mockReset();
   hook.regenerate.mockReset();
   useTitleReportStore.getState().reset();
   useTitleReportStore.getState().open(request);
@@ -59,13 +79,11 @@ describe("TitleReportPanel", () => {
         onReadyChange={onReadyChange}
         onSession={onSession}
         request={request}
-        titleAction={<button type="button">Close title report</button>}
       />,
     );
 
     expect(screen.getByRole("region", { name: "Title report content" })).toBeVisible();
-    expect(screen.getByRole("heading", { name: "Batch A" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Close title report" })).toBeVisible();
+    expect(screen.getByText("Batch A")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Main Chain" })).not.toBeInTheDocument();
     expect(screen.getByTitle("Map for Main Chain")).toHaveAttribute(
       "src",
@@ -92,7 +110,6 @@ describe("TitleReportPanel", () => {
         onReadyChange={vi.fn()}
         onSession={vi.fn()}
         request={request}
-        titleAction={null}
       />,
     );
 
@@ -101,9 +118,10 @@ describe("TitleReportPanel", () => {
     expect(screen.getByText("(2 chains)")).toBeVisible();
   });
 
-  it("reports pending while the title report is loading", () => {
+  it("shows title report progress while the backend generates", () => {
     const onLoaderChange = vi.fn();
     const onReadyChange = vi.fn();
+    useTitleReportStore.getState().begin(request);
 
     render(
       <TitleReportPanel
@@ -113,11 +131,42 @@ describe("TitleReportPanel", () => {
         onReadyChange={onReadyChange}
         onSession={vi.fn()}
         request={request}
-        titleAction={null}
       />,
     );
 
-    expect(onReadyChange).toHaveBeenLastCalledWith(false);
-    expect(onLoaderChange).toHaveBeenLastCalledWith(["Retrieving Indexes..."]);
+    expect(onReadyChange).toHaveBeenLastCalledWith(true);
+    expect(onLoaderChange).toHaveBeenLastCalledWith(null);
+    expect(screen.getByText("Batch A")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Regenerate" })).not.toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "GENERATING TITLE REPORT" })).toBeVisible();
+    expect(screen.getByText("I’ll keep you updated as I generate the title report.")).toBeVisible();
+  });
+
+  it("keeps a load failure in the title report progress view", () => {
+    useTitleReportStore.getState().begin(request);
+    useTitleReportStore.getState().setError(request, {
+      error: { error: "Failed to get chain set." },
+      operation: "load",
+    });
+    progress.jobs = [{
+      error: "Failed to get chain set.",
+      jobId: "Batch A-data",
+      message: "Retrieving Report...",
+      phase: "failed",
+    }];
+
+    render(
+      <TitleReportPanel
+        onError={vi.fn()}
+        onGenerated={vi.fn()}
+        onReadyChange={vi.fn()}
+        onSession={vi.fn()}
+        request={request}
+      />,
+    );
+
+    expect(screen.getByText("Batch A")).toBeVisible();
+    expect(screen.getByRole("region", { name: "GENERATING TITLE REPORT" })).toBeVisible();
+    expect(screen.getByRole("alert")).toHaveTextContent("Failed to get chain set.");
   });
 });

@@ -1,4 +1,6 @@
 import { useEffect } from "react";
+import { ProgressView } from "../../progressview/component/ProgressView";
+import { useProgress } from "../../progressview/hook/useProgress";
 import { titleReportStyles } from "../style/titleReportStyles";
 import { useTitleReport } from "../hook/useTitleReport";
 import { useTitleReportStore } from "../store/titleReportStore";
@@ -12,34 +14,39 @@ export function TitleReportPanel({
   onReadyChange,
   onSession,
   request,
-  titleAction,
 }: TitleReportPanelProps) {
-  const message = useTitleReportStore((state) => state.message);
   const report = useTitleReportStore((state) => state.report);
   const status = useTitleReportStore((state) => state.status);
-  const { regenerate } = useTitleReport({ onError, onGenerated, request });
+  const progress = useProgress(request.batch);
+  const { regenerate } = useTitleReport({
+    onError,
+    onGenerated,
+    onProgress: progress.receive,
+    request,
+    resetProgress: progress.reset,
+  });
 
   useEffect(() => {
-    onReadyChange(status !== "idle" && status !== "loading");
+    onReadyChange(status !== "idle");
   }, [onReadyChange, status]);
 
   useEffect(() => {
-    onLoaderChange?.(status === "idle" || status === "loading" ? (message ? [message] : null) : null);
-  }, [message, onLoaderChange, status]);
+    onLoaderChange?.(null);
+  }, [onLoaderChange]);
 
-  if (status === "idle" || status === "loading" || !report) {
-    return <section aria-label="Title report content" style={titleReportStyles.panel} />;
-  }
+  const inProgress = status === "idle" || status === "loading" || !report;
 
   return (
     <section aria-label="Title report content" style={titleReportStyles.panel}>
-      <div style={titleReportStyles.report}>
-        <header style={titleReportStyles.header}>
-          <h2 style={titleReportStyles.title}>{report.name}</h2>
-          <div style={titleReportStyles.headerActions}>
+      <div data-title-report-controls="true" style={titleReportStyles.header}>
+        <strong style={titleReportStyles.title}>{report?.name ?? request.batch}</strong>
+        <div style={titleReportStyles.headerActions}>
+          {report ? (
             <span style={titleReportStyles.count}>
               ({report.chains.length} chain{report.chains.length === 1 ? "" : "s"})
             </span>
+          ) : null}
+          {report ? (
             <button
               aria-label="Regenerate"
               onClick={() => void regenerate()}
@@ -48,10 +55,19 @@ export function TitleReportPanel({
             >
               ↻ Regenerate
             </button>
-            {titleAction}
-          </div>
-        </header>
-        {report.chains.length ? (
+          ) : null}
+        </div>
+      </div>
+      {inProgress ? (
+        <ProgressView
+          fillCompletion={false}
+          intro="I’ll keep you updated as I generate the title report."
+          jobs={progress.jobs}
+          process="GENERATING TITLE REPORT"
+        />
+      ) : (
+        <div style={titleReportStyles.report}>
+          {report.chains.length ? (
           <div style={titleReportStyles.chainList}>
             {report.chains.map((chain, index) => (
               <ChainPanel
@@ -63,10 +79,11 @@ export function TitleReportPanel({
               />
             ))}
           </div>
-        ) : (
-          <div style={titleReportStyles.empty}>No data available.</div>
-        )}
-      </div>
+          ) : (
+            <div style={titleReportStyles.empty}>No data available.</div>
+          )}
+        </div>
+      )}
     </section>
   );
 }

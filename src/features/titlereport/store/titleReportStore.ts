@@ -1,7 +1,6 @@
 import { create } from "zustand";
 import type {
   TitleReportFailure,
-  TitleReportOperation,
   TitleReport,
   TitleReportRequest,
   TitleReportStatus,
@@ -9,33 +8,29 @@ import type {
 
 type TitleReportStoreState = {
   failure: TitleReportFailure | null;
-  message: string;
-  operation: TitleReportOperation | null;
+  operation: "load" | null;
   report: TitleReport | null;
   request: TitleReportRequest | null;
   status: TitleReportStatus;
-  begin(request: TitleReportRequest, operation: TitleReportOperation): boolean;
+  begin(request: TitleReportRequest): boolean;
   open(request: TitleReportRequest): void;
   reset(): void;
   setError(request: TitleReportRequest, failure: TitleReportFailure): void;
-  setMessage(request: TitleReportRequest, message: string): void;
   setReady(request: TitleReportRequest, report: TitleReport): void;
 };
 
 export const useTitleReportStore = create<TitleReportStoreState>()((set, get) => ({
   failure: null,
-  message: "",
   operation: null,
   report: null,
   request: null,
   status: "idle",
-  begin(request, operation) {
+  begin(request) {
     const state = get();
     if (state.request !== request || state.status === "loading") return false;
     set({
       failure: null,
-      message: "Retrieving Indexes...",
-      operation,
+      operation: "load",
       status: "loading",
     });
     return true;
@@ -43,7 +38,6 @@ export const useTitleReportStore = create<TitleReportStoreState>()((set, get) =>
   open(request) {
     set({
       failure: null,
-      message: "Retrieving Indexes...",
       operation: null,
       report: null,
       request,
@@ -53,7 +47,6 @@ export const useTitleReportStore = create<TitleReportStoreState>()((set, get) =>
   reset() {
     set({
       failure: null,
-      message: "",
       operation: null,
       report: null,
       request: null,
@@ -62,17 +55,12 @@ export const useTitleReportStore = create<TitleReportStoreState>()((set, get) =>
   },
   setError(request, failure) {
     if (get().request !== request) return;
-    set({ failure, message: "", operation: failure.operation, status: "error" });
-  },
-  setMessage(request, message) {
-    if (get().request !== request) return;
-    set({ message });
+    set({ failure, operation: failure.operation, status: "error" });
   },
   setReady(request, report) {
     if (get().request !== request) return;
     set({
       failure: null,
-      message: "",
       operation: null,
       report,
       status: "ready",

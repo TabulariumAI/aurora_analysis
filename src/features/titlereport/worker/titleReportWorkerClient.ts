@@ -6,6 +6,7 @@ import {
   aggregateTitle,
   getTitleData,
   getTitleStatus,
+  generateTitle,
   submitTitle,
 } from "./TitleReportWorker";
 
@@ -13,6 +14,7 @@ export function createTitleReportWorkerClient(config: WorkerConfig): TitleReport
   return {
     aggregate: (token, batch) => aggregateTitle(config.apiBaseUrl, token, batch),
     data: (token, batch) => getTitleData(config.apiBaseUrl, token, batch),
+    generate: (token, batch) => generateTitle(config.apiBaseUrl, token, batch),
     status: (token, batch) => getTitleStatus(config.apiBaseUrl, token, batch),
     submit: (token, batch, session) => submitTitle(config.apiBaseUrl, token, batch, session),
   };

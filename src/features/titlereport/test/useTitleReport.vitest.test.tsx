@@ -1,16 +1,20 @@
-import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { ProgressEvent } from "../../progressview/type/progress.types";
 import type { TitleReportWorkerClient } from "../type/titleReport.types";
 
 const mock = vi.hoisted(() => ({
   client: {
     aggregate: vi.fn(),
     data: vi.fn(),
+    generate: vi.fn(),
     metadata: vi.fn(),
     status: vi.fn(),
     submit: vi.fn(),
   } as TitleReportWorkerClient,
 }));
+
+const progress = vi.hoisted(() => ({ reset: vi.fn() }));
 
 vi.mock("../worker/titleReportWorkerClient", () => ({
   createTitleReportWorkerClient: vi.fn(() => mock.client),
@@ -23,17 +27,20 @@ import type { TitleReportPanelProps, TitleReportRequest } from "../type/titleRep
 const request: TitleReportRequest = {
   authToken: "token-1",
   batch: "Batch A",
+  batchCode: "batch-a",
+  batchGroup: "user",
   apiGatewayUrl: "https://user.example",
   intervalMs: 0,
 };
 
-function Harness(props: Pick<TitleReportPanelProps, "onError" | "onGenerated">) {
-  const { regenerate } = useTitleReport({ ...props, request });
+function Harness(props: Pick<TitleReportPanelProps, "onError" | "onGenerated"> & { onProgress(event: ProgressEvent): void }) {
+  const { regenerate } = useTitleReport({ ...props, request, resetProgress: progress.reset });
   return <button onClick={() => void regenerate()} type="button">Regenerate</button>;
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
+  progress.reset.mockReset();
   useTitleReportStore.getState().reset();
   useTitleReportStore.getState().open(request);
 });
@@ -51,11 +58,12 @@ describe("useTitleReport", () => {
     mock.client.data = vi.fn(async () => [{ title: "Main Chain" }]);
     const onError = vi.fn();
     const onGenerated = vi.fn();
+    const onProgress = vi.fn();
 
-    render(<Harness onError={onError} onGenerated={onGenerated} />);
+    render(<Harness onError={onError} onGenerated={onGenerated} onProgress={onProgress} />);
 
     await waitFor(() => expect(useTitleReportStore.getState().status).toBe("ready"));
-    expect(mock.client.aggregate).toHaveBeenCalledWith("token-1", "Batch A");
+    expect(mock.client.aggregate).not.toHaveBeenCalled();
     expect(mock.client.status).toHaveBeenCalledTimes(2);
     expect(useTitleReportStore.getState().report).toMatchObject({
       name: "Batch A",
@@ -63,25 +71,43 @@ describe("useTitleReport", () => {
     });
     expect(onGenerated).toHaveBeenCalledTimes(1);
     expect(onError).not.toHaveBeenCalled();
+    expect(onProgress).toHaveBeenCalledWith({ jobId: "Batch A-status-0", message: "Retrieving Indexes...", phase: "started" });
+    expect(onProgress).toHaveBeenCalledWith({ jobId: "Batch A-status-1", message: "Analyzing Indexing...", phase: "started" });
+    expect(onProgress).toHaveBeenCalledWith({ jobId: "Batch A-data", message: "Retrieving Report...", phase: "started" });
+    expect(progress.reset).toHaveBeenCalledTimes(1);
   });
 
-  it("regenerates a ready report and reports timeout failures", async () => {
+  it("regenerates a ready report through aggregate before reloading it", async () => {
     mock.client.status = vi.fn().mockResolvedValueOnce(true);
     mock.client.data = vi.fn(async () => [{ title: "Main Chain" }]);
-    const onError = vi.fn();
-    const onGenerated = vi.fn();
+    const onProgress = vi.fn();
 
-    render(<Harness onError={onError} onGenerated={onGenerated} />);
+    render(<Harness onError={vi.fn()} onGenerated={vi.fn()} onProgress={onProgress} />);
     await waitFor(() => expect(useTitleReportStore.getState().status).toBe("ready"));
-    expect(onGenerated).not.toHaveBeenCalled();
 
+    mock.client.aggregate = vi.fn().mockResolvedValue(undefined);
+    mock.client.status = vi.fn()
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(true);
+    screen.getByRole("button", { name: "Regenerate" }).click();
+
+    await waitFor(() => expect(useTitleReportStore.getState().status).toBe("ready"));
+    expect(mock.client.aggregate).toHaveBeenCalledWith("token-1", "Batch A");
+    expect(mock.client.status).toHaveBeenCalledTimes(2);
+    expect(mock.client.data).toHaveBeenCalledTimes(2);
+    expect(progress.reset).toHaveBeenCalledTimes(2);
+  });
+
+  it("reports a title polling timeout without requesting another aggregate", async () => {
     mock.client.status = vi.fn(async () => false);
-    await act(async () => {
-      screen.getByRole("button", { name: "Regenerate" }).click();
-    });
+    const onError = vi.fn();
+    const onProgress = vi.fn();
+
+    render(<Harness onError={onError} onGenerated={vi.fn()} onProgress={onProgress} />);
 
     await waitFor(() => expect(useTitleReportStore.getState().status).toBe("error"));
-    expect(mock.client.status).toHaveBeenCalledTimes(21);
+    expect(mock.client.aggregate).not.toHaveBeenCalled();
+    expect(mock.client.status).toHaveBeenCalledTimes(22);
     expect(onError).toHaveBeenCalledWith({
       error: {
         code: "REPORT_TIMEOUT",
@@ -89,29 +115,38 @@ describe("useTitleReport", () => {
         error: "Report generation timed out.",
         status: undefined,
       },
-      operation: "regenerate",
+      operation: "load",
     });
-    expect(useTitleReportStore.getState().report).toMatchObject({
-      name: "Batch A",
+    expect(onProgress).toHaveBeenLastCalledWith({
+      error: "Report generation timed out.",
+      jobId: "Batch A-status-21",
+      message: "Retrieving Report...",
+      phase: "failed",
     });
   });
 
-  it("reports each missing stage detail without repeating its fallback", async () => {
-    mock.client.status = vi.fn().mockResolvedValueOnce(false);
-    mock.client.aggregate = vi.fn(async () => { throw undefined; });
+  it("reports status and data failures in their progress rows", async () => {
+    mock.client.status = vi.fn(async () => { throw { error: "Title status unavailable" }; });
     const onError = vi.fn();
+    const statusProgress = vi.fn();
 
-    render(<Harness onError={onError} onGenerated={vi.fn()} />);
+    render(<Harness onError={onError} onGenerated={vi.fn()} onProgress={statusProgress} />);
 
     await waitFor(() => expect(onError).toHaveBeenCalledWith({
       error: {
         code: undefined,
         details: undefined,
-        error: "Aggregation failed.",
+        error: "Title status unavailable",
         status: undefined,
       },
       operation: "load",
     }));
+    expect(statusProgress).toHaveBeenLastCalledWith({
+      error: "Title status unavailable",
+      jobId: "Batch A-status-0",
+      message: "Retrieving Indexes...",
+      phase: "failed",
+    });
 
     cleanup();
     useTitleReportStore.getState().reset();
@@ -119,8 +154,9 @@ describe("useTitleReport", () => {
     mock.client.status = vi.fn().mockResolvedValueOnce(true);
     mock.client.data = vi.fn(async () => { throw undefined; });
     const dataError = vi.fn();
+    const dataProgress = vi.fn();
 
-    render(<Harness onError={dataError} onGenerated={vi.fn()} />);
+    render(<Harness onError={dataError} onGenerated={vi.fn()} onProgress={dataProgress} />);
 
     await waitFor(() => expect(dataError).toHaveBeenCalledWith({
       error: {
@@ -131,5 +167,11 @@ describe("useTitleReport", () => {
       },
       operation: "load",
     }));
+    expect(dataProgress).toHaveBeenLastCalledWith({
+      error: "Failed to get chain set.",
+      jobId: "Batch A-data",
+      message: "Retrieving Report...",
+      phase: "failed",
+    });
   });
 });

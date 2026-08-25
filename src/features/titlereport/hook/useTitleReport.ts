@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
+import type { ProgressEvent } from "../../progressview/type/progress.types";
 import { prepareTitleReport, toTitleReportError } from "../data/titleReportData";
 import { useTitleReportStore } from "../store/titleReportStore";
 import type {
   TitleReportFailure,
-  TitleReportOperation,
   TitleReportPanelProps,
 } from "../type/titleReport.types";
 import { createTitleReportWorkerClient } from "../worker/titleReportWorkerClient";
@@ -18,6 +18,11 @@ const messages = [
   "Retrieving Report...",
 ] as const;
 
+type TitleReportProgressCallbacks = {
+  onProgress(event: ProgressEvent): void;
+  resetProgress(): void;
+};
+
 function toStageFailure(error: unknown, fallback: string): TitleReportFailure["error"] {
   const failure = toTitleReportError(error, fallback);
   return failure.error === fallback
@@ -28,8 +33,10 @@ function toStageFailure(error: unknown, fallback: string): TitleReportFailure["e
 export function useTitleReport({
   onError,
   onGenerated,
+  onProgress,
   request,
-}: Pick<TitleReportPanelProps, "onError" | "onGenerated" | "request">) {
+  resetProgress,
+}: Pick<TitleReportPanelProps, "onError" | "onGenerated" | "request"> & TitleReportProgressCallbacks) {
   const callbacks = useRef({ onError, onGenerated });
   const runId = useRef(0);
   callbacks.current = { onError, onGenerated };
@@ -38,35 +45,38 @@ export function useTitleReport({
     [request.apiGatewayUrl],
   );
 
-  const run = useCallback(async (operation: TitleReportOperation) => {
-    if (!useTitleReportStore.getState().begin(request, operation)) return;
+  const run = useCallback(async (regenerate = false) => {
+    if (!useTitleReportStore.getState().begin(request)) return;
+    resetProgress();
     const currentRun = runId.current + 1;
     runId.current = currentRun;
     const active = () => runId.current === currentRun;
+    let progressId = "status-0";
+    let message: string = messages[0];
+    onProgress({ jobId: `${request.batch}-${progressId}`, message, phase: "started" });
     try {
-      let complete = operation === "load"
-        ? await client.status(request.authToken, request.batch)
-        : false;
-      let requested = operation === "regenerate";
-
-      if (!complete) {
+      let complete = false;
+      if (regenerate) {
         try {
           await client.aggregate(request.authToken, request.batch);
         } catch (error) {
           throw toStageFailure(error, "Aggregation failed.");
         }
-        requested = true;
+      } else {
+        complete = await client.status(request.authToken, request.batch);
+      }
+      const generated = regenerate || !complete;
 
+      if (!complete) {
         for (let attempt = 0; attempt < 21 && !complete; attempt += 1) {
           if (!active()) return;
-          useTitleReportStore.getState().setMessage(
-            request,
-            messages[Math.min(attempt + 1, messages.length - 1)],
-          );
           await new Promise<void>((resolve) => {
             setTimeout(resolve, request.intervalMs);
           });
           if (!active()) return;
+          progressId = `status-${attempt + 1}`;
+          message = messages[Math.min(attempt + 1, messages.length - 1)];
+          onProgress({ jobId: `${request.batch}-${progressId}`, message, phase: "started" });
           complete = await client.status(request.authToken, request.batch);
         }
       }
@@ -78,6 +88,9 @@ export function useTitleReport({
         };
       }
 
+      progressId = "data";
+      message = "Retrieving Report...";
+      onProgress({ jobId: `${request.batch}-${progressId}`, message, phase: "started" });
       let data: unknown;
       try {
         data = await client.data(request.authToken, request.batch);
@@ -86,26 +99,27 @@ export function useTitleReport({
       }
       if (!active()) return;
       useTitleReportStore.getState().setReady(request, prepareTitleReport(data, request.batch));
-      if (requested) callbacks.current.onGenerated();
+      if (generated) callbacks.current.onGenerated();
     } catch (error) {
       if (!active()) return;
       const failure: TitleReportFailure = {
         error: toTitleReportError(error, "An error occurred while processing the report."),
-        operation,
+        operation: "load",
       };
       useTitleReportStore.getState().setError(request, failure);
-      callbacks.current.onError(failure);
+      onProgress({ error: failure.error.error, jobId: `${request.batch}-${progressId}`, message, phase: "failed" });
+      callbacks.current.onError?.(failure);
     }
-  }, [client, request]);
+  }, [client, onProgress, request, resetProgress]);
 
   useEffect(() => {
-    void run("load");
+    void run();
     return () => {
       runId.current += 1;
     };
   }, [run]);
 
   return {
-    regenerate: () => run("regenerate"),
+    regenerate: () => run(true),
   };
 }

@@ -2,27 +2,28 @@ import type { TitleReportError } from "../type/titleReport.types";
 
 type TitleReportResponse = {
   code?: string;
-  data?: unknown;
+  data?: string;
   error?: string;
   message?: string;
   status?: unknown;
   success?: boolean;
 };
 
-function responseError(response: Response, data: TitleReportResponse): TitleReportError {
+function responseError(response: Response, data: unknown): TitleReportError {
+  const payload = data && typeof data === "object" ? data as TitleReportResponse : {};
   return {
-    code: data.code ?? (response.status === 401 ? "unauthorized" : "server_error"),
+    code: payload.code ?? (response.status === 401 ? "unauthorized" : "server_error"),
     details: data,
-    error: data.error ?? data.message ?? response.statusText,
+    error: payload.error ?? payload.message ?? payload.data ?? response.statusText,
     status: response.status,
   };
 }
 
-async function titleReportFetch(
+async function titleReportFetch<T>(
   token: string,
   url: string,
   init: { body?: unknown; method: "GET" | "POST" },
-): Promise<TitleReportResponse> {
+): Promise<T> {
   const response = await fetch(url, {
     method: init.method,
     headers: {
@@ -33,10 +34,10 @@ async function titleReportFetch(
     cache: "no-store",
   });
   const raw = await response.text();
-  let payload: TitleReportResponse = {};
+  let payload: unknown = {};
   if (raw) {
     try {
-      payload = JSON.parse(raw) as TitleReportResponse;
+      payload = JSON.parse(raw);
     } catch {
       throw {
         code: "parse_error",
@@ -48,13 +49,15 @@ async function titleReportFetch(
   }
   if (
     !response.ok
-    || payload.success === false
-    || payload.status === "error"
-    || payload.status === "FAILED"
+    || (typeof payload === "object" && payload !== null && (
+      (payload as TitleReportResponse).success === false
+      || (payload as TitleReportResponse).status === "error"
+      || (payload as TitleReportResponse).status === "FAILED"
+    ))
   ) {
     throw responseError(response, payload);
   }
-  return payload;
+  return payload as T;
 }
 
 export function parseTitleReportData(data: unknown): unknown {
@@ -90,8 +93,16 @@ export async function aggregateTitle(baseUrl: string, token: string, batch: stri
   );
 }
 
+export async function generateTitle(baseUrl: string, token: string, batch: string) {
+  await titleReportFetch(
+    token,
+    `${baseUrl}/v1/title/${encodeURIComponent(batch)}/generations`,
+    { method: "POST" },
+  );
+}
+
 export async function getTitleStatus(baseUrl: string, token: string, batch: string) {
-  const response = await titleReportFetch(
+  const response = await titleReportFetch<TitleReportResponse>(
     token,
     `${baseUrl}/v1/title/${encodeURIComponent(batch)}/status`,
     { method: "GET" },
@@ -100,10 +111,13 @@ export async function getTitleStatus(baseUrl: string, token: string, batch: stri
 }
 
 export async function getTitleData(baseUrl: string, token: string, batch: string) {
-  const response = await titleReportFetch(
+  const { data: url } = await titleReportFetch<TitleReportResponse & { data: string }>(
     token,
     `${baseUrl}/v1/title/${encodeURIComponent(batch)}/data`,
     { method: "GET" },
   );
-  return parseTitleReportData(response.data);
+  const response = await fetch(url);
+  const data = await response.text();
+  if (!response.ok) throw responseError(response, { error: data });
+  return parseTitleReportData(data);
 }
