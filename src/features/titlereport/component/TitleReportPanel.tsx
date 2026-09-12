@@ -66,7 +66,7 @@ export function TitleReportPanel({
           process="GENERATING TITLE REPORT"
         />
       ) : (
-        <div style={titleReportStyles.report}>
+        <div data-panel-scroll="true" style={titleReportStyles.report}>
           {report.chains.length ? (
           <div style={titleReportStyles.chainList}>
             {report.chains.map((chain, index) => (

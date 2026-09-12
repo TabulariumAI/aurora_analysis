@@ -47,7 +47,7 @@ export function ProgressView({ completion, completionJobId, fillCompletion, intr
   const fillsCompletion = fillCompletion && completion != null && completionIndex === lastIndex && jobs[lastIndex]?.phase === "completed";
 
   return (
-    <section aria-label={process} aria-live="polite" data-testid="progress-view" style={progressStyles.root}>
+    <section aria-label={process} aria-live="polite" data-panel-scroll="true" data-testid="progress-view" style={progressStyles.root}>
       <style>{motion}</style>
       <div data-testid="progress-content" style={fillsCompletion ? { ...progressStyles.content, ...progressStyles.fillContent } : progressStyles.content}>
         <p data-testid="progress-caption" style={progressStyles.caption}>{process}</p>
@@ -62,6 +62,7 @@ export function ProgressView({ completion, completionJobId, fillCompletion, intr
         </div>
         <ol
           aria-label={`${process} updates`}
+          data-panel-scroll={fillsCompletion ? "true" : undefined}
           style={fillsCompletion ? {
             ...progressStyles.timeline,
             ...progressStyles.fillTimeline,

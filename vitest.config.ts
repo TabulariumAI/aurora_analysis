@@ -12,7 +12,6 @@ export default defineConfig({
       react: path.resolve(rootDir, "node_modules/react"),
       "react-dom": path.resolve(rootDir, "node_modules/react-dom"),
       "@radix-ui/react-collapsible": path.resolve(rootDir, "node_modules/@radix-ui/react-collapsible"),
-      "aurorra-index": fileURLToPath(new URL("../aurorra_index/src/public-api.ts", import.meta.url)),
     },
     dedupe: ["react", "react-dom", "@radix-ui/react-collapsible"],
     preserveSymlinks: true,

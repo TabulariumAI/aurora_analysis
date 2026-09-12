@@ -83,6 +83,7 @@ describe("TitleReportPanel", () => {
     );
 
     expect(screen.getByRole("region", { name: "Title report content" })).toBeVisible();
+    expect(screen.getByRole("region", { name: "Title report content" }).querySelector("[data-panel-scroll='true']")).toBeTruthy();
     expect(screen.getByText("Batch A")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Main Chain" })).not.toBeInTheDocument();
     expect(screen.getByTitle("Map for Main Chain")).toHaveAttribute(
