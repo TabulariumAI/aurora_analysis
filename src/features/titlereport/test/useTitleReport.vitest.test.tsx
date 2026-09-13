@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ProgressEvent } from "../../progressview/type/progress.types";
 import type { TitleReportWorkerClient } from "../type/titleReport.types";
@@ -34,8 +34,9 @@ const request: TitleReportRequest = {
 };
 
 function Harness(props: Pick<TitleReportPanelProps, "onError" | "onGenerated"> & { onProgress(event: ProgressEvent): void }) {
-  const { regenerate } = useTitleReport({ ...props, request, resetProgress: progress.reset });
-  return <button onClick={() => void regenerate()} type="button">Regenerate</button>;
+  const current = useTitleReportStore((state) => state.request)!;
+  useTitleReport({ ...props, request: current, resetProgress: progress.reset });
+  return <button onClick={() => useTitleReportStore.getState().refresh()} type="button">Refresh</button>;
 }
 
 beforeEach(() => {
@@ -89,7 +90,7 @@ describe("useTitleReport", () => {
     mock.client.status = vi.fn()
       .mockResolvedValueOnce(false)
       .mockResolvedValueOnce(true);
-    screen.getByRole("button", { name: "Regenerate" }).click();
+    act(() => screen.getByRole("button", { name: "Refresh" }).click());
 
     await waitFor(() => expect(useTitleReportStore.getState().status).toBe("ready"));
     expect(mock.client.aggregate).toHaveBeenCalledWith("token-1", "Batch A");

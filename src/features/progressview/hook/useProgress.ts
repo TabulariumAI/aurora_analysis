@@ -17,21 +17,16 @@ export function useProgress(requestId: string): ProgressState {
     if (activeId.current !== requestId) return;
     setState((current) => {
       const jobs = current.requestId === requestId ? current.jobs : [];
-      if (event.phase === "started") {
-        return { jobs: [
-          ...jobs.map<ProgressJob>((job) => job.phase === "started" ? { ...job, phase: "completed" } : job),
-          { jobId: event.jobId, message: event.message, phase: event.phase },
-        ], requestId };
+      const jobIndex = jobs.findIndex((job) => job.jobId === event.jobId);
+      const next = jobIndex < 0 && event.phase === "started"
+        ? jobs.map<ProgressJob>((job) => job.phase === "started" ? { ...job, phase: "completed" } : job)
+        : [...jobs];
+      if (jobIndex < 0) {
+        if (event.phase === "started") next.push(event);
+      } else {
+        next[jobIndex] = { ...jobs[jobIndex], ...event };
       }
-
-      return { jobs: jobs.map<ProgressJob>((job) => job.jobId === event.jobId
-        ? {
-            ...job,
-            ...(event.phase === "failed" ? { error: event.error } : {}),
-            message: event.message,
-            phase: event.phase,
-          }
-        : job), requestId };
+      return { jobs: next, requestId };
     });
   }, [requestId]);
 

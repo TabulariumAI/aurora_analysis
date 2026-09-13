@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { ProgressEvent } from "../../progressview/type/progress.types";
-import { prepareTitleReport, toTitleReportError } from "../data/titleReportData";
+import { prepareTitleReport, submitSession, toTitleReportError } from "../data/titleReportData";
 import { useTitleReportStore } from "../store/titleReportStore";
 import type {
   TitleReportFailure,
@@ -12,8 +12,8 @@ const messages = [
   "Retrieving Indexes...",
   "Analyzing Indexing...",
   "Analyzing Indexing...",
-  "Generating Report..",
-  "Generating Report..",
+  "Generating Report...",
+  "Generating Report...",
   "Retrieving Report...",
   "Retrieving Report...",
 ] as const;
@@ -45,16 +45,36 @@ export function useTitleReport({
     [request.apiGatewayUrl],
   );
 
-  const run = useCallback(async (regenerate = false) => {
+  const run = useCallback(async () => {
     if (!useTitleReportStore.getState().begin(request)) return;
+    const { regenerate } = useTitleReportStore.getState();
     resetProgress();
     const currentRun = runId.current + 1;
     runId.current = currentRun;
-    const active = () => runId.current === currentRun;
+    const active = () => runId.current === currentRun && useTitleReportStore.getState().request === request;
     let progressId = "status-0";
     let message: string = messages[0];
-    onProgress({ jobId: `${request.batch}-${progressId}`, message, phase: "started" });
     try {
+      const submit = !regenerate && request.sessions !== undefined && !useTitleReportStore.getState().submitted;
+      if (submit) {
+        progressId = "link";
+        for (const [index, session] of request.sessions!.entries()) {
+          message = `Linking session ${index + 1} of ${request.sessions!.length}...`;
+          onProgress({ jobId: `${request.batch}-${progressId}`, message, phase: "started" });
+          await submitSession(client, request.authToken, request.batch, session);
+          if (!active()) return;
+        }
+        progressId = "generate";
+        message = "Starting report generation...";
+        onProgress({ jobId: `${request.batch}-${progressId}`, message, phase: "started" });
+        await client.generate(request.authToken, request.batch);
+        if (!active()) return;
+        useTitleReportStore.getState().setSubmitted(request);
+      }
+
+      progressId = "status-0";
+      message = messages[0];
+      onProgress({ jobId: `${request.batch}-${progressId}`, message, phase: "started" });
       let complete = false;
       if (regenerate) {
         try {
@@ -65,7 +85,8 @@ export function useTitleReport({
       } else {
         complete = await client.status(request.authToken, request.batch);
       }
-      const generated = regenerate || !complete;
+      if (!active()) return;
+      const generated = submit || regenerate || !complete;
 
       if (!complete) {
         for (let attempt = 0; attempt < 21 && !complete; attempt += 1) {
@@ -78,6 +99,7 @@ export function useTitleReport({
           message = messages[Math.min(attempt + 1, messages.length - 1)];
           onProgress({ jobId: `${request.batch}-${progressId}`, message, phase: "started" });
           complete = await client.status(request.authToken, request.batch);
+          if (!active()) return;
         }
       }
 
@@ -118,8 +140,4 @@ export function useTitleReport({
       runId.current += 1;
     };
   }, [run]);
-
-  return {
-    regenerate: () => run(true),
-  };
 }

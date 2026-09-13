@@ -18,7 +18,7 @@ export function TitleReportPanel({
   const report = useTitleReportStore((state) => state.report);
   const status = useTitleReportStore((state) => state.status);
   const progress = useProgress(request.batch);
-  const { regenerate } = useTitleReport({
+  useTitleReport({
     onError,
     onGenerated,
     onProgress: progress.receive,
@@ -38,26 +38,6 @@ export function TitleReportPanel({
 
   return (
     <section aria-label="Title report content" style={titleReportStyles.panel}>
-      <div data-title-report-controls="true" style={titleReportStyles.header}>
-        <strong style={titleReportStyles.title}>{report?.name ?? request.batch}</strong>
-        <div style={titleReportStyles.headerActions}>
-          {report ? (
-            <span style={titleReportStyles.count}>
-              ({report.chains.length} chain{report.chains.length === 1 ? "" : "s"})
-            </span>
-          ) : null}
-          {report ? (
-            <button
-              aria-label="Regenerate"
-              onClick={() => void regenerate()}
-              style={titleReportStyles.regenerate}
-              type="button"
-            >
-              ↻ Regenerate
-            </button>
-          ) : null}
-        </div>
-      </div>
       {inProgress ? (
         <ProgressView
           fillCompletion={false}

@@ -61,11 +61,6 @@ export const titleReportStyles = {
     width: "100%",
     wordBreak: "break-word",
   } satisfies CSSProperties,
-  count: {
-    color: "var(--slate-500)",
-    fontSize: "0.95rem",
-    whiteSpace: "nowrap",
-  } satisfies CSSProperties,
   detailLabel: {
     color: "var(--slate-500)",
     fontSize: "0.75rem",
@@ -75,26 +70,6 @@ export const titleReportStyles = {
   empty: {
     color: "var(--body-ink)",
     fontSize: "1rem",
-  } satisfies CSSProperties,
-  header: {
-    alignItems: "baseline",
-    borderBottom: "1px solid var(--border-card)",
-    boxSizing: "border-box",
-    display: "flex",
-    flex: "0 0 auto",
-    flexWrap: "wrap",
-    gap: "var(--panel-header-gap)",
-    justifyContent: "space-between",
-    minHeight: "var(--panel-header-height)",
-    padding: "var(--panel-header-padding)",
-    width: "100%",
-  } satisfies CSSProperties,
-  headerActions: {
-    alignItems: "center",
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "0.75rem",
-    justifyContent: "flex-end",
   } satisfies CSSProperties,
   infoBody(color: string): CSSProperties {
     return {
@@ -175,17 +150,6 @@ export const titleReportStyles = {
     color: "#777777",
     fontStyle: "italic",
   } satisfies CSSProperties,
-  regenerate: {
-    background: "var(--gray-100)",
-    border,
-    borderRadius: "var(--radius-card)",
-    color: "var(--title-ink)",
-    cursor: "pointer",
-    font: "inherit",
-    fontSize: "0.9rem",
-    fontWeight: 700,
-    padding: "0.35rem 0.75rem",
-  } satisfies CSSProperties,
   report: {
     display: "flex",
     flex: "1 1 auto",
@@ -244,13 +208,5 @@ export const titleReportStyles = {
   tableWrap: {
     overflowX: "auto",
     width: "100%",
-  } satisfies CSSProperties,
-  title: {
-    color: "var(--title-ink)",
-    fontSize: "var(--panel-title-size)",
-    fontWeight: "var(--panel-title-weight)",
-    letterSpacing: "var(--panel-title-tracking)",
-    lineHeight: "var(--panel-title-line-height)",
-    margin: 0,
   } satisfies CSSProperties,
 };

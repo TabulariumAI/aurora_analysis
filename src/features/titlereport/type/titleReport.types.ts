@@ -67,12 +67,16 @@ export type TitleReportFailure = {
   operation: "load";
 };
 
-export type TitleReportRequest = {
-  apiGatewayUrl: string;
-  authToken: string;
+export type TitleReportData = {
   batch: string;
   batchCode: string;
   batchGroup: "pending" | "user" | "sub";
+  sessions?: readonly string[];
+};
+
+export type TitleReportRequest = TitleReportData & {
+  apiGatewayUrl: string;
+  authToken: string;
   intervalMs: number;
 };
 

@@ -4,12 +4,8 @@ import { prepareTitleReport } from "../data/titleReportData";
 import { useTitleReportStore } from "../store/titleReportStore";
 import type { TitleReportRequest } from "../type/titleReport.types";
 
-const hook = vi.hoisted(() => ({
-  regenerate: vi.fn(),
-}));
-
 vi.mock("../hook/useTitleReport", () => ({
-  useTitleReport: vi.fn(() => ({ regenerate: hook.regenerate })),
+  useTitleReport: vi.fn(() => ({})),
 }));
 
 const progress = vi.hoisted(() => ({
@@ -42,7 +38,6 @@ beforeEach(() => {
   progress.jobs = [];
   progress.receive.mockReset();
   progress.reset.mockReset();
-  hook.regenerate.mockReset();
   useTitleReportStore.getState().reset();
   useTitleReportStore.getState().open(request);
 });
@@ -84,7 +79,7 @@ describe("TitleReportPanel", () => {
 
     expect(screen.getByRole("region", { name: "Title report content" })).toBeVisible();
     expect(screen.getByRole("region", { name: "Title report content" }).querySelector("[data-panel-scroll='true']")).toBeTruthy();
-    expect(screen.getByText("Batch A")).toBeVisible();
+    expect(screen.queryByText("Batch A")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Main Chain" })).not.toBeInTheDocument();
     expect(screen.getByTitle("Map for Main Chain")).toHaveAttribute(
       "src",
@@ -94,8 +89,7 @@ describe("TitleReportPanel", () => {
     expect(onReadyChange).toHaveBeenLastCalledWith(true);
     fireEvent.click(screen.getByRole("button", { name: "View" }));
     expect(onSession).toHaveBeenCalledWith("session-2");
-    fireEvent.click(screen.getByRole("button", { name: "Regenerate" }));
-    expect(hook.regenerate).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("button", { name: "Regenerate" })).not.toBeInTheDocument();
   });
 
   it("uses Radix collapsibles for multiple chains and opens the first", () => {
@@ -116,7 +110,7 @@ describe("TitleReportPanel", () => {
 
     expect(screen.getByRole("button", { name: "Chain One" })).toHaveAttribute("data-state", "open");
     expect(screen.getByRole("button", { name: "Chain Two" })).toHaveAttribute("data-state", "closed");
-    expect(screen.getByText("(2 chains)")).toBeVisible();
+    expect(screen.queryByText("(2 chains)")).not.toBeInTheDocument();
   });
 
   it("shows title report progress while the backend generates", () => {
@@ -137,7 +131,7 @@ describe("TitleReportPanel", () => {
 
     expect(onReadyChange).toHaveBeenLastCalledWith(true);
     expect(onLoaderChange).toHaveBeenLastCalledWith(null);
-    expect(screen.getByText("Batch A")).toBeVisible();
+    expect(screen.queryByText("Batch A")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Regenerate" })).not.toBeInTheDocument();
     expect(screen.getByRole("region", { name: "GENERATING TITLE REPORT" })).toBeVisible();
     expect(screen.getByText("I’ll keep you updated as I generate the title report.")).toBeVisible();
@@ -166,7 +160,7 @@ describe("TitleReportPanel", () => {
       />,
     );
 
-    expect(screen.getByText("Batch A")).toBeVisible();
+    expect(screen.queryByText("Batch A")).not.toBeInTheDocument();
     expect(screen.getByRole("region", { name: "GENERATING TITLE REPORT" })).toBeVisible();
     expect(screen.getByRole("alert")).toHaveTextContent("Failed to get chain set.");
   });
