@@ -2,13 +2,13 @@ import type { CSSProperties } from "react";
 
 const border = "1px solid var(--border-card)";
 const divider = "1px solid var(--border-subtle)";
-const caption = "var(--primary)";
+const caption = "var(--primary-dark)";
 
 export const titleReportStyles = {
   badge(background: string | null, color: string | null): CSSProperties {
     return {
       background: background || "var(--gray-200)",
-      borderRadius: "9999rem",
+      borderRadius: "var(--radius-pill)",
       color: color || "var(--title-ink)",
       display: "inline-block",
       fontSize: "0.875rem",
@@ -45,7 +45,7 @@ export const titleReportStyles = {
     overflow: "hidden",
   } satisfies CSSProperties,
   chainTrigger: {
-    background: "var(--gray-100)",
+    background: "var(--accent-surface)",
     border: 0,
     borderBottom: border,
     color: "var(--title-ink)",
@@ -134,7 +134,7 @@ export const titleReportStyles = {
     width: "100%",
   } satisfies CSSProperties,
   recordCode: {
-    color: "#888888",
+    color: "var(--slate-500)",
     fontSize: "0.75rem",
     marginBottom: "0.25rem",
   } satisfies CSSProperties,
@@ -147,7 +147,7 @@ export const titleReportStyles = {
     paddingLeft: "0.75rem",
   } satisfies CSSProperties,
   recordMissing: {
-    color: "#777777",
+    color: "var(--slate-500)",
     fontStyle: "italic",
   } satisfies CSSProperties,
   report: {
@@ -164,21 +164,29 @@ export const titleReportStyles = {
     width: "100%",
   } satisfies CSSProperties,
   statusTable: {
+    fontVariantNumeric: "tabular-nums",
+    fontSize: "0.875rem",
+    lineHeight: 1.45,
     background: "var(--white)",
     border,
     borderCollapse: "separate",
     borderRadius: "var(--radius-card)",
     borderSpacing: 0,
     boxShadow: "var(--shadow-card)",
+    minWidth: "32rem",
     tableLayout: "fixed",
     width: "100%",
   } satisfies CSSProperties,
   table: {
+    fontVariantNumeric: "tabular-nums",
+    fontSize: "0.875rem",
+    lineHeight: 1.45,
     background: "var(--white)",
     border,
     borderCollapse: "separate",
     borderRadius: "var(--radius-card)",
     borderSpacing: 0,
+    minWidth: "32rem",
     tableLayout: "fixed",
     width: "100%",
   } satisfies CSSProperties,
@@ -191,17 +199,17 @@ export const titleReportStyles = {
   tableCell: {
     borderBottom: divider,
     color: "var(--title-ink)",
-    padding: "0.625rem 0.5rem",
+    padding: "0.65rem 0.7rem",
     verticalAlign: "top",
     wordBreak: "break-word",
   } satisfies CSSProperties,
   tableHead: {
-    background: "var(--gray-100)",
+    background: "var(--accent-surface)",
     borderBottom: border,
     color: "var(--title-ink)",
     fontSize: "0.9rem",
     minWidth: "5rem",
-    padding: "0.625rem 0.5rem",
+    padding: "0.65rem 0.7rem",
     textAlign: "left",
     verticalAlign: "top",
   } satisfies CSSProperties,
