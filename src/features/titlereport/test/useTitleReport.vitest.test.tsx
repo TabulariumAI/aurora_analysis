@@ -41,6 +41,7 @@ function Harness(props: Pick<TitleReportPanelProps, "onError" | "onGenerated"> &
 
 beforeEach(() => {
   vi.clearAllMocks();
+
   progress.reset.mockReset();
   useTitleReportStore.getState().reset();
   useTitleReportStore.getState().open(request);
@@ -48,6 +49,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
   useTitleReportStore.getState().reset();
 });
 
@@ -175,4 +177,14 @@ describe("useTitleReport", () => {
       phase: "failed",
     });
   });
+});
+
+it("does not publish a generated report after unmount", async () => {
+  let finish!: (value: unknown) => void;
+  mock.client.status = vi.fn().mockResolvedValueOnce(false).mockResolvedValue(true);
+  mock.client.data = vi.fn(() => new Promise((resolve) => { finish = resolve; }));
+  const view = render(<Harness onError={vi.fn()} onGenerated={vi.fn()} onProgress={vi.fn()} />);
+  await waitFor(() => expect(mock.client.data).toHaveBeenCalledOnce());
+  view.unmount();
+  await act(async () => finish([{ title: "Chain" }]));
 });

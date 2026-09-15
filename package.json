@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@radix-ui/react-collapsible": "^1.1.20",
+    "aurora-core": "file:../aurora_core",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "zustand": "^5.0.14"

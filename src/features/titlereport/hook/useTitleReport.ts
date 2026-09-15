@@ -121,7 +121,9 @@ export function useTitleReport({
       }
       if (!active()) return;
       useTitleReportStore.getState().setReady(request, prepareTitleReport(data, request.batch));
-      if (generated) callbacks.current.onGenerated();
+      if (generated) {
+        callbacks.current.onGenerated();
+      }
     } catch (error) {
       if (!active()) return;
       const failure: TitleReportFailure = {

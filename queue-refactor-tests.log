@@ -1,0 +1,9 @@
+
+ RUN  v4.1.10 C:/GitHub/Tabularium/aurora_analysis
+
+
+ Test Files  9 passed (9)
+      Tests  47 passed (47)
+   Start at  21:21:15
+   Duration  35.65s (transform 1.37s, setup 4.35s, import 3.75s, tests 8.42s, environment 42.17s)
+

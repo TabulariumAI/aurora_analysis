@@ -9,6 +9,7 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
+      "aurora-core": path.resolve(rootDir, "../aurora_core/src/public-api.ts"),
       react: path.resolve(rootDir, "node_modules/react"),
       "react-dom": path.resolve(rootDir, "node_modules/react-dom"),
       "@radix-ui/react-collapsible": path.resolve(rootDir, "node_modules/@radix-ui/react-collapsible"),
@@ -24,6 +25,7 @@ export default defineConfig({
     },
     rollupOptions: {
       external: [
+        "aurora-core",
         "react",
         "react-dom",
         "react-dom/client",

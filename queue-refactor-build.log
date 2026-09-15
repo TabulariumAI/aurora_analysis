@@ -1,0 +1,12 @@
+
+> aurora-analysis@0.0.0 build
+> vite build
+
+vite v8.2.0 building client environment for production...
+[2K
+transforming...✓ 19 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/aurora-analysis.js  46.23 kB │ gzip: 12.65 kB
+
+✓ built in 127ms
