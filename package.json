@@ -2,7 +2,26 @@
   "name": "aurora-analysis",
   "private": true,
   "version": "0.0.0",
+  "description": "React title-report workflow for linking document sessions, generating title analysis, tracking progress, and presenting report chains in the Tabularium AI platform.",
   "type": "module",
+  "license": "Apache-2.0",
+  "author": "Tabularium AI",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TabulariumAI/aurora_analysis.git"
+  },
+  "bugs": {
+    "url": "https://github.com/TabulariumAI/aurora_analysis/issues"
+  },
+  "homepage": "https://github.com/TabulariumAI/aurora_analysis#readme",
+  "keywords": [
+    "title-report",
+    "title-analysis",
+    "document-analysis",
+    "document-workflow",
+    "react",
+    "tabularium-ai"
+  ],
   "main": "./src/public-api.ts",
   "module": "./src/public-api.ts",
   "types": "./src/public-api.ts",

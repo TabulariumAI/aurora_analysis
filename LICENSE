@@ -1,0 +1,15 @@
+Aurora Analysis License
+
+Copyright 2026 Tabularium AI
+
+Source code in this repository is licensed under the Apache License, Version 2.0.
+You may obtain a copy of the Apache License at:
+
+https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, source code distributed
+under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+OR CONDITIONS OF ANY KIND, either express or implied.
+
+The Aurora service runtime, credentials, customer documents, and live storage
+URLs are not included in this repository. See NOTICE for repository-specific notices.
