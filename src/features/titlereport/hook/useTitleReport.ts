@@ -17,6 +17,13 @@ const messages = [
   "Retrieving Report...",
   "Retrieving Report...",
 ] as const;
+const POLLING_ATTEMPTS = 21;
+
+function pollingProgress(attempt: number) {
+  if (attempt < 2) return { completed: attempt + 1, total: 2, unit: "steps" as const };
+  if (attempt < 4) return { completed: attempt - 1, total: 2, unit: "steps" as const };
+  return { completed: attempt - 3, total: 18, unit: "steps" as const };
+}
 
 type TitleReportProgressCallbacks = {
   onProgress(event: ProgressEvent): void;
@@ -54,13 +61,19 @@ export function useTitleReport({
     const active = () => runId.current === currentRun && useTitleReportStore.getState().request === request;
     let progressId = "status-0";
     let message: string = messages[0];
+    let sawRetrievingPoll = false;
     try {
       const submit = !regenerate && request.sessions !== undefined && !useTitleReportStore.getState().submitted;
       if (submit) {
         progressId = "link";
         for (const [index, session] of request.sessions!.entries()) {
-          message = `Linking session ${index + 1} of ${request.sessions!.length}...`;
-          onProgress({ jobId: `${request.batch}-${progressId}`, message, phase: "started" });
+          message = "Linking sessions...";
+          onProgress({
+            jobId: `${request.batch}-${progressId}`,
+            message,
+            phase: "started",
+            progress: { completed: index + 1, total: request.sessions!.length, unit: "sessions" },
+          });
           await submitSession(client, request.authToken, request.batch, session);
           if (!active()) return;
         }
@@ -89,7 +102,7 @@ export function useTitleReport({
       const generated = submit || regenerate || !complete;
 
       if (!complete) {
-        for (let attempt = 0; attempt < 21 && !complete; attempt += 1) {
+        for (let attempt = 0; attempt < POLLING_ATTEMPTS && !complete; attempt += 1) {
           if (!active()) return;
           await new Promise<void>((resolve) => {
             setTimeout(resolve, request.intervalMs);
@@ -97,7 +110,9 @@ export function useTitleReport({
           if (!active()) return;
           progressId = `status-${attempt + 1}`;
           message = messages[Math.min(attempt + 1, messages.length - 1)];
-          onProgress({ jobId: `${request.batch}-${progressId}`, message, phase: "started" });
+          const progress = pollingProgress(attempt);
+          if (attempt >= 4) sawRetrievingPoll = true;
+          onProgress({ jobId: `${request.batch}-${progressId}`, message, phase: "started", progress });
           complete = await client.status(request.authToken, request.batch);
           if (!active()) return;
         }
@@ -112,7 +127,14 @@ export function useTitleReport({
 
       progressId = "data";
       message = "Retrieving Report...";
-      onProgress({ jobId: `${request.batch}-${progressId}`, message, phase: "started" });
+      onProgress({
+        jobId: `${request.batch}-${progressId}`,
+        message,
+        phase: "started",
+        progress: sawRetrievingPoll
+          ? { completed: 18, total: 18, unit: "steps" }
+          : { completed: 1, total: 1, unit: "steps" },
+      });
       let data: unknown;
       try {
         data = await client.data(request.authToken, request.batch);

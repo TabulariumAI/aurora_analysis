@@ -3,6 +3,18 @@ import { describe, expect, it } from "vitest";
 import { useProgress } from "../hook/useProgress";
 
 describe("useProgress", () => {
+  it("preserves an omitted count on terminal updates and clears it on restart", () => {
+    const { result } = renderHook(() => useProgress("Batch A"));
+
+    act(() => {
+      result.current.receive({ jobId: "data", message: "Retrieving Report...", phase: "started", progress: { completed: 18, total: 18, unit: "steps" } });
+      result.current.receive({ jobId: "data", message: "Retrieving Report...", phase: "failed", error: "Unavailable" });
+      result.current.receive({ jobId: "data", message: "Retrieving Report...", phase: "started" });
+    });
+
+    expect(result.current.jobs).toEqual([{ jobId: "data", message: "Retrieving Report...", phase: "started" }]);
+  });
+
   it("updates one numbered job in place and completes it when the next stage starts", () => {
     const { result } = renderHook(() => useProgress("Batch A"));
     for (let index = 1; index <= 7; index++) {

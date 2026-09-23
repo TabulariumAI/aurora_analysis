@@ -5,6 +5,53 @@ import { ProgressView } from "../component/ProgressView";
 afterEach(cleanup);
 
 describe("ProgressView", () => {
+  it("renders scheduled step counts only from the current raw group member", () => {
+    render(
+      <ProgressView
+        fillCompletion={false}
+        intro="I’ll keep you updated as I generate the title report."
+        jobs={[
+          { jobId: "first", message: "Retrieving Report...", phase: "completed", progress: { completed: 1, total: 18, unit: "steps" } },
+          { jobId: "second", message: "Retrieving Report...", phase: "started", progress: { completed: 18, total: 18, unit: "steps" } },
+        ]}
+        process="GENERATING TITLE REPORT"
+      />,
+    );
+
+    expect(screen.getAllByRole("listitem")).toHaveLength(1);
+    expect(screen.getByRole("progressbar", { name: "Retrieving Report..." })).toHaveAttribute("aria-valuetext", "Step 18 of 18");
+  });
+
+  it("hides a completed event's counter and bar", () => {
+    render(<ProgressView fillCompletion={false} intro="I’ll keep you updated as I generate the title report." jobs={[{
+      jobId: "report",
+      message: "Retrieving Report...",
+      phase: "completed",
+      progress: { completed: 18, total: 18, unit: "steps" },
+    }]} process="GENERATING TITLE REPORT" />);
+
+    expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+    expect(screen.queryByText("Step 18 of 18")).not.toBeInTheDocument();
+  });
+
+  it("groups only consecutive jobs with the same message for display", () => {
+    render(
+      <ProgressView
+        fillCompletion={false}
+        intro="I’ll keep you updated as I generate the title report."
+        jobs={[
+          { jobId: "first", message: "Retrieving Report...", phase: "completed" },
+          { jobId: "second", message: "Retrieving Report...", phase: "started" },
+          { jobId: "third", message: "Generating Report...", phase: "started" },
+          { jobId: "fourth", message: "Retrieving Report...", phase: "started" },
+        ]}
+        process="GENERATING TITLE REPORT"
+      />,
+    );
+
+    expect(screen.getAllByRole("listitem")).toHaveLength(3);
+  });
+
   it("renders title progress as an accessible ordered timeline", () => {
     render(
       <ProgressView

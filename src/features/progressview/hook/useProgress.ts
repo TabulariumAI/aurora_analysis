@@ -1,6 +1,17 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { ProgressEvent, ProgressJob } from "../type/progress.types";
 
+function mergeJob(current: ProgressJob, event: ProgressEvent): ProgressJob {
+  const restarting = event.phase === "started" && (current.phase === "completed" || current.phase === "failed");
+  const next = { ...current, ...event };
+  if (!restarting) return next;
+
+  const { error: _error, ...withoutError } = next;
+  if (Object.hasOwn(event, "progress")) return withoutError;
+  const { progress: _progress, ...withoutProgress } = withoutError;
+  return withoutProgress;
+}
+
 type ProgressState = {
   jobs: readonly ProgressJob[];
   receive(event: ProgressEvent): void;
@@ -24,7 +35,7 @@ export function useProgress(requestId: string): ProgressState {
       if (jobIndex < 0) {
         if (event.phase === "started") next.push(event);
       } else {
-        next[jobIndex] = { ...jobs[jobIndex], ...event };
+        next[jobIndex] = mergeJob(jobs[jobIndex], event);
       }
       return { jobs: next, requestId };
     });

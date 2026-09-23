@@ -75,8 +75,8 @@ describe("useTitleReport", () => {
     expect(onGenerated).toHaveBeenCalledTimes(1);
     expect(onError).not.toHaveBeenCalled();
     expect(onProgress).toHaveBeenCalledWith({ jobId: "Batch A-status-0", message: "Retrieving Indexes...", phase: "started" });
-    expect(onProgress).toHaveBeenCalledWith({ jobId: "Batch A-status-1", message: "Analyzing Indexing...", phase: "started" });
-    expect(onProgress).toHaveBeenCalledWith({ jobId: "Batch A-data", message: "Retrieving Report...", phase: "started" });
+    expect(onProgress).toHaveBeenCalledWith({ jobId: "Batch A-status-1", message: "Analyzing Indexing...", phase: "started", progress: { completed: 1, total: 2, unit: "steps" } });
+    expect(onProgress).toHaveBeenCalledWith({ jobId: "Batch A-data", message: "Retrieving Report...", phase: "started", progress: { completed: 1, total: 1, unit: "steps" } });
     expect(progress.reset).toHaveBeenCalledTimes(1);
   });
 
@@ -99,6 +99,39 @@ describe("useTitleReport", () => {
     expect(mock.client.status).toHaveBeenCalledTimes(2);
     expect(mock.client.data).toHaveBeenCalledTimes(2);
     expect(progress.reset).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps a stable linking row and counts selected sessions", async () => {
+    useTitleReportStore.getState().open({ ...request, sessions: ["first", "second"] });
+    mock.client.submit = vi.fn().mockResolvedValue(undefined);
+    mock.client.generate = vi.fn().mockResolvedValue(undefined);
+    mock.client.status = vi.fn().mockResolvedValue(true);
+    mock.client.data = vi.fn().mockResolvedValue([{ title: "Main Chain" }]);
+    const onProgress = vi.fn();
+
+    render(<Harness onError={vi.fn()} onGenerated={vi.fn()} onProgress={onProgress} />);
+
+    await waitFor(() => expect(useTitleReportStore.getState().status).toBe("ready"));
+    expect(onProgress).toHaveBeenCalledWith({ jobId: "Batch A-link", message: "Linking sessions...", phase: "started", progress: { completed: 1, total: 2, unit: "sessions" } });
+    expect(onProgress).toHaveBeenCalledWith({ jobId: "Batch A-link", message: "Linking sessions...", phase: "started", progress: { completed: 2, total: 2, unit: "sessions" } });
+  });
+
+  it("uses the final retrieval slot after a retrieving poll", async () => {
+    mock.client.status = vi.fn()
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(true);
+    mock.client.data = vi.fn().mockResolvedValue([{ title: "Main Chain" }]);
+    const onProgress = vi.fn();
+
+    render(<Harness onError={vi.fn()} onGenerated={vi.fn()} onProgress={onProgress} />);
+
+    await waitFor(() => expect(useTitleReportStore.getState().status).toBe("ready"));
+    expect(onProgress).toHaveBeenCalledWith({ jobId: "Batch A-status-5", message: "Retrieving Report...", phase: "started", progress: { completed: 1, total: 18, unit: "steps" } });
+    expect(onProgress).toHaveBeenCalledWith({ jobId: "Batch A-data", message: "Retrieving Report...", phase: "started", progress: { completed: 18, total: 18, unit: "steps" } });
   });
 
   it("reports a title polling timeout without requesting another aggregate", async () => {
@@ -126,6 +159,9 @@ describe("useTitleReport", () => {
       message: "Retrieving Report...",
       phase: "failed",
     });
+    expect(onProgress).toHaveBeenCalledWith({ jobId: "Batch A-status-2", message: "Analyzing Indexing...", phase: "started", progress: { completed: 2, total: 2, unit: "steps" } });
+    expect(onProgress).toHaveBeenCalledWith({ jobId: "Batch A-status-5", message: "Retrieving Report...", phase: "started", progress: { completed: 1, total: 18, unit: "steps" } });
+    expect(onProgress).toHaveBeenCalledWith({ jobId: "Batch A-status-21", message: "Retrieving Report...", phase: "started", progress: { completed: 17, total: 18, unit: "steps" } });
   });
 
   it("reports status and data failures in their progress rows", async () => {
