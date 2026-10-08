@@ -101,11 +101,6 @@ export const progressStyles = {
     borderRadius: "var(--radius-pill)",
     boxSizing: "border-box",
   },
-  finalIcon: {
-    backgroundColor: "var(--gray-50)",
-    border: "1px solid var(--primary-dark)",
-    color: "var(--primary-dark)",
-  },
   finalMessage: {
     backgroundColor: "var(--accent-surface)",
   },
@@ -189,12 +184,10 @@ export const progressPhaseStyles: Record<ProgressPhase, CSSProperties> = {
     color: "var(--primary-dark)",
   },
   completed: {
-    backgroundColor: "#ECFDF3",
-    border: "1px solid #15803D",
-    color: "#15803D",
+    backgroundColor: "transparent",
   },
   failed: {
-    backgroundColor: "#FEF2F2",
+    backgroundColor: "transparent",
     color: "#991B1B",
   },
 };

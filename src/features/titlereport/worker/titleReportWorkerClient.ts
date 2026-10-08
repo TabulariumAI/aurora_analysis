@@ -12,10 +12,10 @@ import {
 
 export function createTitleReportWorkerClient(config: WorkerConfig): TitleReportWorkerClient {
   return {
-    aggregate: (token, batch) => aggregateTitle(config.apiBaseUrl, token, batch),
+    aggregate: (token, batch, sessions) => aggregateTitle(config.apiBaseUrl, token, batch, sessions),
     data: (token, batch) => getTitleData(config.apiBaseUrl, token, batch),
-    generate: (token, batch) => generateTitle(config.apiBaseUrl, token, batch),
-    status: (token, batch) => getTitleStatus(config.apiBaseUrl, token, batch),
+    generate: (token, batch, sessions) => generateTitle(config.apiBaseUrl, token, batch, sessions),
+    status: (token, batch, sessions, check) => getTitleStatus(config.apiBaseUrl, token, batch, sessions, check),
     submit: (token, batch, session) => submitTitle(config.apiBaseUrl, token, batch, session),
   };
 }

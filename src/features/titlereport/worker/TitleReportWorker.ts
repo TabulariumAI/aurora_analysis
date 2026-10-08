@@ -5,6 +5,7 @@ type TitleReportResponse = {
   data?: string;
   error?: string;
   message?: string;
+  matches?: boolean;
   status?: unknown;
   success?: boolean;
 };
@@ -22,7 +23,7 @@ function responseError(response: Response, data: unknown): TitleReportError {
 async function titleReportFetch<T>(
   token: string,
   url: string,
-  init: { body?: unknown; method: "GET" | "POST" },
+  init: { body?: unknown; method: "GET" | "POST"; check?: boolean },
 ): Promise<T> {
   const response = await fetch(url, {
     method: init.method,
@@ -51,8 +52,8 @@ async function titleReportFetch<T>(
     !response.ok
     || (typeof payload === "object" && payload !== null && (
       (payload as TitleReportResponse).success === false
-      || (payload as TitleReportResponse).status === "error"
-      || (payload as TitleReportResponse).status === "FAILED"
+      || (!init.check && ((payload as TitleReportResponse).status === "error"
+      || (payload as TitleReportResponse).status === "FAILED"))
     ))
   ) {
     throw responseError(response, payload);
@@ -85,29 +86,31 @@ export async function submitTitle(
   });
 }
 
-export async function aggregateTitle(baseUrl: string, token: string, batch: string) {
+export async function aggregateTitle(baseUrl: string, token: string, batch: string, sessions?: readonly string[]) {
   await titleReportFetch(
     token,
     `${baseUrl}/v1/title/${encodeURIComponent(batch)}/aggregate`,
-    { body: { session: "" }, method: "POST" },
+    { body: { session: "", sessions }, method: "POST" },
   );
 }
 
-export async function generateTitle(baseUrl: string, token: string, batch: string) {
+export async function generateTitle(baseUrl: string, token: string, batch: string, sessions?: readonly string[]) {
   await titleReportFetch(
     token,
     `${baseUrl}/v1/title/${encodeURIComponent(batch)}/generations`,
-    { method: "POST" },
+    { body: { session: "", sessions }, method: "POST" },
   );
 }
 
-export async function getTitleStatus(baseUrl: string, token: string, batch: string) {
+export async function getTitleStatus(baseUrl: string, token: string, batch: string, sessions?: readonly string[], check?: boolean) {
+  const query = new URLSearchParams();
+  for (const session of sessions ?? []) query.append("session", session);
   const response = await titleReportFetch<TitleReportResponse>(
     token,
-    `${baseUrl}/v1/title/${encodeURIComponent(batch)}/status`,
-    { method: "GET" },
+    `${baseUrl}/v1/title/${encodeURIComponent(batch)}/status${query.size ? `?${query}` : ""}`,
+    { method: "GET", check: check && Boolean(sessions?.length) },
   );
-  return response.status === "completed";
+  return response.status === "completed" && (!sessions?.length || response.matches === true);
 }
 
 export async function getTitleData(baseUrl: string, token: string, batch: string) {

@@ -32,7 +32,7 @@ beforeEach(() => {
   client.submit.mockResolvedValue(undefined);
   client.generate.mockResolvedValue(undefined);
   client.aggregate.mockResolvedValue(undefined);
-  client.status.mockResolvedValue(true);
+  client.status.mockResolvedValue(true).mockResolvedValueOnce(false);
   client.data.mockResolvedValue([{ title: "Main Chain", records: [] }]);
   useTitleReportStore.getState().open(request);
 });
@@ -49,12 +49,12 @@ it("shows linking progress immediately, links sequentially, then generates and l
   client.generate.mockReturnValueOnce(generation.promise);
   render(<Report />);
   expect(screen.getByRole("region", { name: "GENERATING TITLE REPORT" })).toBeVisible();
-  expect(screen.getByText("Linking sessions...")).toBeVisible();
+  expect(await screen.findByText("Linking sessions...")).toBeVisible();
   expect(screen.getByText("Session 1 of 2")).toBeVisible();
   const linking = screen.getByText("Linking sessions...");
   expect(client.submit).toHaveBeenCalledExactlyOnceWith("token-1", "Batch A", "first");
   expect(client.generate).not.toHaveBeenCalled();
-  expect(client.status).not.toHaveBeenCalled();
+  expect(client.status).toHaveBeenCalledTimes(1);
   await act(async () => first.resolve());
   expect(screen.getByText("Session 2 of 2")).toBeVisible();
   expect(screen.getAllByText("Linking sessions...")).toHaveLength(1);
@@ -66,8 +66,8 @@ it("shows linking progress immediately, links sequentially, then generates and l
   expect(screen.getByText("Starting report generation...")).toBeVisible();
   expect(screen.getAllByText("Linking sessions...")).toHaveLength(1);
   expect(linking.closest("li")).toHaveAttribute("data-phase", "completed");
-  expect(client.generate).toHaveBeenCalledExactlyOnceWith("token-1", "Batch A");
-  expect(client.status).not.toHaveBeenCalled();
+  expect(client.generate).toHaveBeenCalledExactlyOnceWith("token-1", "Batch A", request.sessions);
+  expect(client.status).toHaveBeenCalledTimes(1);
   await act(async () => generation.resolve());
   await waitFor(() => expect(useTitleReportStore.getState().status).toBe("ready"));
   expect(client.data).toHaveBeenCalledExactlyOnceWith("token-1", "Batch A");
@@ -86,7 +86,7 @@ it.each([0, 1, 2])("keeps failure at submission stage %s in progress and stops t
   expect(screen.getByText("Linking sessions...").closest("li")).toHaveAttribute("data-phase", stage === 2 ? "completed" : "failed");
   expect(client.submit).toHaveBeenCalledTimes(Math.min(stage + 1, 2));
   expect(client.generate).toHaveBeenCalledTimes(stage === 2 ? 1 : 0);
-  expect(client.status).not.toHaveBeenCalled();
+  expect(client.status).toHaveBeenCalledTimes(1);
   expect(client.data).not.toHaveBeenCalled();
   expect(onGenerated).not.toHaveBeenCalled();
   expect(onError).toHaveBeenCalledTimes(1);
@@ -101,6 +101,7 @@ it("generates an explicitly empty session selection without adding sessions", as
 });
 
 it("restores a report without submitting sessions or requesting generation", async () => {
+  client.status.mockReset().mockResolvedValue(true);
   const { sessions: _sessions, ...restored } = request;
   useTitleReportStore.getState().open(restored);
   render(<Report />);
@@ -115,7 +116,7 @@ it("refreshes and regenerates a linked report without submitting it again", asyn
   await waitFor(() => expect(useTitleReportStore.getState().status).toBe("ready"));
   act(() => useTitleReportStore.getState().refresh());
   await waitFor(() => expect(client.data).toHaveBeenCalledTimes(2));
-  expect(client.aggregate).toHaveBeenCalledExactlyOnceWith("token-1", "Batch A");
+  expect(client.aggregate).toHaveBeenCalledExactlyOnceWith("token-1", "Batch A", request.sessions);
   act(() => useTitleReportStore.getState().refresh());
   await waitFor(() => expect(client.data).toHaveBeenCalledTimes(3));
   expect(client.submit).toHaveBeenCalledTimes(2);
@@ -124,6 +125,7 @@ it("refreshes and regenerates a linked report without submitting it again", asyn
 });
 
 it("retries failed linking through refresh", async () => {
+  client.status.mockResolvedValueOnce(false);
   client.submit.mockRejectedValueOnce({ error: "Link unavailable" });
   render(<Report />);
   await screen.findByRole("alert");
@@ -148,7 +150,7 @@ it.each(["close", "replace"])("stops a pending submission after %s", async (acti
   const pending = deferred();
   client.submit.mockReturnValueOnce(pending.promise);
   render(<Report />);
-  expect(client.submit).toHaveBeenCalledTimes(1);
+  await waitFor(() => expect(client.submit).toHaveBeenCalledTimes(1));
   act(() => {
     if (action === "close") useTitleReportStore.getState().reset();
     else useTitleReportStore.getState().open({ ...request, batch: "Batch B", sessions: [] });
@@ -166,7 +168,7 @@ it("stops polling after the report closes during generation", async () => {
   await waitFor(() => expect(client.generate).toHaveBeenCalledTimes(1));
   act(() => useTitleReportStore.getState().reset());
   await act(async () => pending.resolve());
-  expect(client.status).not.toHaveBeenCalled();
+  expect(client.status).toHaveBeenCalledTimes(1);
   expect(client.data).not.toHaveBeenCalled();
   expect(onGenerated).not.toHaveBeenCalled();
 });

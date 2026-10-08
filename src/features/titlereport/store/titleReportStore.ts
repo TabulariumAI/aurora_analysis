@@ -51,12 +51,12 @@ export const useTitleReportStore = create<TitleReportStoreState>()((set, get) =>
     set({ ...initialState, busy: request.sessions !== undefined, request });
   },
   refresh() {
-    const { busy, request, submitted } = get();
+    const { busy, request, status, submitted } = get();
     if (!request || busy) return;
     set({
       ...initialState,
       busy: request.sessions !== undefined && !submitted,
-      regenerate: request.sessions === undefined || submitted,
+      regenerate: status === "ready" || request.sessions === undefined || submitted,
       request: { ...request },
       submitted,
     });

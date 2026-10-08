@@ -81,10 +81,10 @@ export type TitleReportRequest = TitleReportData & {
 };
 
 export type TitleReportWorkerClient = {
-  aggregate(token: string, batch: string): Promise<void>;
+  aggregate(token: string, batch: string, sessions?: readonly string[]): Promise<void>;
   data(token: string, batch: string): Promise<unknown>;
-  generate(token: string, batch: string): Promise<void>;
-  status(token: string, batch: string): Promise<boolean>;
+  generate(token: string, batch: string, sessions?: readonly string[]): Promise<void>;
+  status(token: string, batch: string, sessions?: readonly string[], check?: boolean): Promise<boolean>;
   submit(token: string, batch: string, session: string): Promise<void>;
 };
 

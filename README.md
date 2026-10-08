@@ -7,6 +7,7 @@ It is a host-integrated package. The host provides authentication, API gateway c
 ## Features
 
 - Link document sessions to a title-report batch
+- Reuse reports matching the selected sessions before submitting or generating
 - Generate and poll title analysis
 - Track generation progress and loading state
 - Present report chains, records, completeness, conveyances, encumbrances, and issues
@@ -32,6 +33,8 @@ import { TitleReportPanel } from "aurora-analysis";
 ```
 
 See the exported prop types in [`src/public-api.ts`](src/public-api.ts). The host must supply valid credentials and compatible gateway endpoints.
+
+The workflow checks title status with the selected session IDs before linking sessions. A matching report loads immediately. A mismatch submits the selected sessions and requests generation with the same selection. Refresh explicitly regenerates. Without session IDs, the workflow skips ETag verification and retains status polling and report retrieval.
 
 ## Development
 

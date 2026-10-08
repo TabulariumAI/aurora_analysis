@@ -95,7 +95,7 @@ describe("useTitleReport", () => {
     act(() => screen.getByRole("button", { name: "Refresh" }).click());
 
     await waitFor(() => expect(useTitleReportStore.getState().status).toBe("ready"));
-    expect(mock.client.aggregate).toHaveBeenCalledWith("token-1", "Batch A");
+    expect(mock.client.aggregate).toHaveBeenCalledWith("token-1", "Batch A", undefined);
     expect(mock.client.status).toHaveBeenCalledTimes(2);
     expect(mock.client.data).toHaveBeenCalledTimes(2);
     expect(progress.reset).toHaveBeenCalledTimes(2);
@@ -105,7 +105,7 @@ describe("useTitleReport", () => {
     useTitleReportStore.getState().open({ ...request, sessions: ["first", "second"] });
     mock.client.submit = vi.fn().mockResolvedValue(undefined);
     mock.client.generate = vi.fn().mockResolvedValue(undefined);
-    mock.client.status = vi.fn().mockResolvedValue(true);
+    mock.client.status = vi.fn().mockResolvedValue(true).mockResolvedValueOnce(false);
     mock.client.data = vi.fn().mockResolvedValue([{ title: "Main Chain" }]);
     const onProgress = vi.fn();
 

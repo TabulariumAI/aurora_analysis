@@ -9,6 +9,52 @@ function response(data: unknown, status = 200) {
 }
 
 describe("title report worker client", () => {
+  it("treats a previously failed report as a cache miss but reports polling failures", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockImplementation(async () => response({ status: "error", data: "Generation failed", matches: false })));
+    const client = createTitleReportWorkerClient({ apiBaseUrl: "https://user.example" });
+    await expect(client.status("token", "Batch", ["s1"], true)).resolves.toBe(false);
+    await expect(client.status("token", "Batch", ["s1"])).rejects.toMatchObject({ error: "Generation failed" });
+    await expect(client.status("token", "Batch", undefined, true)).rejects.toMatchObject({ error: "Generation failed" });
+    vi.unstubAllGlobals();
+  });
+
+  it("does not treat HTTP failures as cache misses", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response({ error: "Unavailable" }, 503)));
+    const client = createTitleReportWorkerClient({ apiBaseUrl: "https://user.example" });
+    await expect(client.status("token", "Batch", ["s1"], true)).rejects.toMatchObject({ status: 503 });
+    vi.unstubAllGlobals();
+  });
+
+  it.each([true, false])("checks the server comparison for selected sessions: %s", async (matches) => {
+    const fetchMock = vi.fn().mockResolvedValue(response({ status: "completed", matches, etag: "selection" }));
+    vi.stubGlobal("fetch", fetchMock);
+    const client = createTitleReportWorkerClient({ apiBaseUrl: "https://user.example" });
+    await expect(client.status("token", "Batch", ["s1", "s&2"])).resolves.toBe(matches);
+    expect(fetchMock.mock.calls[0][0]).toBe("https://user.example/v1/title/Batch/status?session=s1&session=s%262");
+    vi.unstubAllGlobals();
+  });
+
+  it("ignores ETag comparison without session IDs", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(response({ status: "completed", matches: false }));
+    vi.stubGlobal("fetch", fetchMock);
+    const client = createTitleReportWorkerClient({ apiBaseUrl: "https://user.example" });
+    await expect(client.status("token", "Batch")).resolves.toBe(true);
+    expect(fetchMock.mock.calls[0][0]).toBe("https://user.example/v1/title/Batch/status");
+    vi.unstubAllGlobals();
+  });
+
+  it("forwards the selection on initial and explicit generation", async () => {
+    const fetchMock = vi.fn().mockImplementation(async () => response({ status: "processing" }));
+    vi.stubGlobal("fetch", fetchMock);
+    const client = createTitleReportWorkerClient({ apiBaseUrl: "https://user.example" });
+    await client.generate("token", "Batch", ["s1"]);
+    await client.aggregate("token", "Batch", ["s1"]);
+    expect(fetchMock.mock.calls.map(([, init]) => JSON.parse(init.body))).toEqual([
+      { session: "", sessions: ["s1"] }, { session: "", sessions: ["s1"] },
+    ]);
+    vi.unstubAllGlobals();
+  });
+
   it("downloads completed report JSON from the returned Azure Blob SAS URL", async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(response({ data: "", status: "completed" }))
@@ -90,7 +136,7 @@ describe("title report worker client", () => {
         url: "https://user.example/v1/title/submit",
       },
       {
-        body: undefined,
+        body: JSON.stringify({ session: "" }),
         method: "POST",
         token: "Bearer token-1",
         url: "https://user.example/v1/title/Batch%20A/generations",

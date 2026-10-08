@@ -63,7 +63,13 @@ export function useTitleReport({
     let message: string = messages[0];
     let sawRetrievingPoll = false;
     try {
-      const submit = !regenerate && request.sessions !== undefined && !useTitleReportStore.getState().submitted;
+      onProgress({ jobId: `${request.batch}-${progressId}`, message, phase: "started" });
+      let complete = false;
+      if (!regenerate) {
+        complete = await client.status(request.authToken, request.batch, request.sessions, true);
+        if (!active()) return;
+      }
+      const submit = !complete && !regenerate && request.sessions !== undefined && !useTitleReportStore.getState().submitted;
       if (submit) {
         progressId = "link";
         for (const [index, session] of request.sessions!.entries()) {
@@ -80,7 +86,7 @@ export function useTitleReport({
         progressId = "generate";
         message = "Starting report generation...";
         onProgress({ jobId: `${request.batch}-${progressId}`, message, phase: "started" });
-        await client.generate(request.authToken, request.batch);
+        await client.generate(request.authToken, request.batch, request.sessions);
         if (!active()) return;
         useTitleReportStore.getState().setSubmitted(request);
       }
@@ -88,18 +94,20 @@ export function useTitleReport({
       progressId = "status-0";
       message = messages[0];
       onProgress({ jobId: `${request.batch}-${progressId}`, message, phase: "started" });
-      let complete = false;
       if (regenerate) {
         try {
-          await client.aggregate(request.authToken, request.batch);
+          await client.aggregate(request.authToken, request.batch, request.sessions);
         } catch (error) {
           throw toStageFailure(error, "Aggregation failed.");
         }
-      } else {
-        complete = await client.status(request.authToken, request.batch);
       }
       if (!active()) return;
       const generated = submit || regenerate || !complete;
+
+      if (submit || regenerate) {
+        complete = await client.status(request.authToken, request.batch, request.sessions);
+        if (!active()) return;
+      }
 
       if (!complete) {
         for (let attempt = 0; attempt < POLLING_ATTEMPTS && !complete; attempt += 1) {
@@ -113,7 +121,7 @@ export function useTitleReport({
           const progress = pollingProgress(attempt);
           if (attempt >= 4) sawRetrievingPoll = true;
           onProgress({ jobId: `${request.batch}-${progressId}`, message, phase: "started", progress });
-          complete = await client.status(request.authToken, request.batch);
+          complete = await client.status(request.authToken, request.batch, request.sessions);
           if (!active()) return;
         }
       }
