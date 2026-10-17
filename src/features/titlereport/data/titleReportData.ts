@@ -240,3 +240,15 @@ export async function submitSession(
   await client.submit(token, name, session);
   return session;
 }
+
+
+export async function* pollSteps(intervalMs: number, steps: number) {
+  const stepMs = 7500;
+  const budgetMs = steps * stepMs;
+  for (let elapsedMs = 0; elapsedMs < budgetMs;) {
+    const waitMs = Math.min(intervalMs, budgetMs - elapsedMs);
+    await new Promise<void>(resolve => setTimeout(resolve, waitMs));
+    yield Math.floor(elapsedMs / stepMs);
+    elapsedMs += waitMs;
+  }
+}

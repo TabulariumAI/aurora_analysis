@@ -49,6 +49,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  vi.useRealTimers();
   vi.restoreAllMocks();
   useTitleReportStore.getState().reset();
 });
@@ -117,33 +118,34 @@ describe("useTitleReport", () => {
   });
 
   it("uses the final retrieval slot after a retrieving poll", async () => {
-    mock.client.status = vi.fn()
-      .mockResolvedValueOnce(false)
-      .mockResolvedValueOnce(false)
-      .mockResolvedValueOnce(false)
-      .mockResolvedValueOnce(false)
-      .mockResolvedValueOnce(false)
-      .mockResolvedValueOnce(true);
+    vi.useFakeTimers();
+    useTitleReportStore.getState().open({ ...request, intervalMs: 500 });
+    let checks = 0;
+    mock.client.status = vi.fn(async () => ++checks > 61);
     mock.client.data = vi.fn().mockResolvedValue([{ title: "Main Chain" }]);
     const onProgress = vi.fn();
 
     render(<Harness onError={vi.fn()} onGenerated={vi.fn()} onProgress={onProgress} />);
 
-    await waitFor(() => expect(useTitleReportStore.getState().status).toBe("ready"));
+    await act(async () => { await vi.runAllTimersAsync(); });
+    expect(useTitleReportStore.getState().status).toBe("ready");
     expect(onProgress).toHaveBeenCalledWith({ jobId: "Batch A-status-5", message: "Retrieving Report...", phase: "started", progress: { completed: 1, total: 18, unit: "steps" } });
     expect(onProgress).toHaveBeenCalledWith({ jobId: "Batch A-data", message: "Retrieving Report...", phase: "started", progress: { completed: 18, total: 18, unit: "steps" } });
   });
 
   it("reports a title polling timeout without requesting another aggregate", async () => {
+    vi.useFakeTimers();
+    useTitleReportStore.getState().open({ ...request, intervalMs: 500 });
     mock.client.status = vi.fn(async () => false);
     const onError = vi.fn();
     const onProgress = vi.fn();
 
     render(<Harness onError={onError} onGenerated={vi.fn()} onProgress={onProgress} />);
 
-    await waitFor(() => expect(useTitleReportStore.getState().status).toBe("error"));
+    await act(async () => { await vi.runAllTimersAsync(); });
+    expect(useTitleReportStore.getState().status).toBe("error");
     expect(mock.client.aggregate).not.toHaveBeenCalled();
-    expect(mock.client.status).toHaveBeenCalledTimes(22);
+    expect(mock.client.status).toHaveBeenCalledTimes(316);
     expect(onError).toHaveBeenCalledWith({
       error: {
         code: "REPORT_TIMEOUT",
@@ -223,4 +225,28 @@ it("does not publish a generated report after unmount", async () => {
   await waitFor(() => expect(mock.client.data).toHaveBeenCalledOnce());
   view.unmount();
   await act(async () => finish([{ title: "Chain" }]));
+});
+
+
+it.each([500, 1000, 6000, 7500].flatMap(intervalMs => [false, true].map(complete => ({ intervalMs, complete }))))("preserves the title polling budget at $intervalMs ms; completed=$complete", async ({ intervalMs, complete }) => {
+  vi.useFakeTimers();
+  useTitleReportStore.getState().open({ ...request, intervalMs });
+  mock.client.status = vi.fn().mockResolvedValue(false);
+  mock.client.data = vi.fn().mockResolvedValue([{ title: "Main Chain" }]);
+  const onError = vi.fn();
+  const onProgress = vi.fn();
+  render(<Harness onError={onError} onGenerated={vi.fn()} onProgress={onProgress} />);
+  await act(async () => { await vi.advanceTimersByTimeAsync(157_000); });
+  expect(onError).not.toHaveBeenCalled();
+  expect(mock.client.data).not.toHaveBeenCalled();
+  expect(mock.client.status).toHaveBeenCalledTimes(Math.floor(157_000 / intervalMs) + 1);
+  if (complete) mock.client.status = vi.fn().mockResolvedValue(true);
+  await act(async () => { await vi.advanceTimersByTimeAsync(500); });
+  expect(useTitleReportStore.getState().status).toBe(complete ? "ready" : "error");
+  expect(mock.client.aggregate).not.toHaveBeenCalled();
+  expect(mock.client.data).toHaveBeenCalledTimes(complete ? 1 : 0);
+  expect(onError).toHaveBeenCalledTimes(complete ? 0 : 1);
+  for (const [event] of onProgress.mock.calls) {
+    if (event.progress) expect(event.progress.completed).toBeLessThanOrEqual(event.progress.total);
+  }
 });

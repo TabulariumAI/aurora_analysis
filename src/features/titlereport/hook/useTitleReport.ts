@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { ProgressEvent } from "../../progressview/type/progress.types";
-import { prepareTitleReport, submitSession, toTitleReportError } from "../data/titleReportData";
+import { pollSteps, prepareTitleReport, submitSession, toTitleReportError } from "../data/titleReportData";
 import { useTitleReportStore } from "../store/titleReportStore";
 import type {
   TitleReportFailure,
@@ -17,7 +17,6 @@ const messages = [
   "Retrieving Report...",
   "Retrieving Report...",
 ] as const;
-const POLLING_ATTEMPTS = 21;
 
 function pollingProgress(attempt: number) {
   if (attempt < 2) return { completed: attempt + 1, total: 2, unit: "steps" as const };
@@ -110,19 +109,16 @@ export function useTitleReport({
       }
 
       if (!complete) {
-        for (let attempt = 0; attempt < POLLING_ATTEMPTS && !complete; attempt += 1) {
+        for await (const step of pollSteps(request.intervalMs, 21)) {
           if (!active()) return;
-          await new Promise<void>((resolve) => {
-            setTimeout(resolve, request.intervalMs);
-          });
-          if (!active()) return;
-          progressId = `status-${attempt + 1}`;
-          message = messages[Math.min(attempt + 1, messages.length - 1)];
-          const progress = pollingProgress(attempt);
-          if (attempt >= 4) sawRetrievingPoll = true;
+          progressId = `status-${step + 1}`;
+          message = messages[Math.min(step + 1, messages.length - 1)];
+          const progress = pollingProgress(step);
+          if (step >= 4) sawRetrievingPoll = true;
           onProgress({ jobId: `${request.batch}-${progressId}`, message, phase: "started", progress });
           complete = await client.status(request.authToken, request.batch, request.sessions);
           if (!active()) return;
+          if (complete) break;
         }
       }
 

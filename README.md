@@ -36,6 +36,8 @@ See the exported prop types in [`src/public-api.ts`](src/public-api.ts). The hos
 
 The workflow checks title status with the selected session IDs before linking sessions. A matching report loads immediately. A mismatch submits the selected sessions and requests generation with the same selection. Refresh explicitly regenerates. Without session IDs, the workflow skips ETag verification and retains status polling and report retrieval.
 
+The polling budget is 7.5 seconds per progress step, independently of the polling interval. The host polls every 500 ms; the 21 progress steps retain their 157.5-second waiting budget.
+
 ## Development
 
 ```sh
