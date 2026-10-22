@@ -11,7 +11,7 @@ vi.mock("../worker/titleReportWorkerClient", () => ({ createTitleReportWorkerCli
 
 const request: TitleReportRequest = {
   apiGatewayUrl: "https://gateway.test", authToken: "token-1", intervalMs: 0,
-  batch: "Batch A", batchCode: "a", batchGroup: "user", sessions: ["first", "second"],
+  batch: "Batch A", batchId: "a", batchCode: "a", batchGroup: "user", sessions: ["first", "second"],
 };
 const onGenerated = vi.fn();
 const onError = vi.fn();

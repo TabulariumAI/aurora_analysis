@@ -69,6 +69,7 @@ export type TitleReportFailure = {
 
 export type TitleReportData = {
   batch: string;
+  batchId: string;
   batchCode: string;
   batchGroup: "pending" | "user" | "sub";
   sessions?: readonly string[];

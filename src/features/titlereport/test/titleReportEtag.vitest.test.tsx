@@ -10,7 +10,7 @@ const client = vi.hoisted(() => ({
 vi.mock("../worker/titleReportWorkerClient", () => ({ createTitleReportWorkerClient: () => client }));
 const generated = vi.fn();
 const request: TitleReportRequest = {
-  apiGatewayUrl: "https://gateway", authToken: "token", batch: "Batch", batchCode: "batch",
+  apiGatewayUrl: "https://gateway", authToken: "token", batch: "Batch", batchId: "batch", batchCode: "batch",
   batchGroup: "user", intervalMs: 0, sessions: ["s1", "s2"],
 };
 function Report() {

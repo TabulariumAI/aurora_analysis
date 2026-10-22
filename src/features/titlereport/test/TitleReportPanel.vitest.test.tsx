@@ -28,7 +28,7 @@ import { TitleReportPanel } from "../component/TitleReportPanel";
 const request: TitleReportRequest = {
   authToken: "token-1",
   batch: "Batch A",
-  batchCode: "batch-a",
+  batchId: "batch-a", batchCode: "batch-a",
   batchGroup: "user",
   apiGatewayUrl: "https://user.example",
   intervalMs: 10,
