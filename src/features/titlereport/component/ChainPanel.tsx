@@ -193,6 +193,7 @@ function ChainBody({ chain, onSession }: Pick<ChainPanelProps, "chain" | "onSess
                   <td style={titleReportStyles.tableCell}>
                     {record.session ? (
                       <button
+                        aria-label={["View", record.title, record.code].filter(Boolean).join(" ")}
                         onClick={() => onSession(record.session as string)}
                         style={titleReportStyles.link}
                         type="button"

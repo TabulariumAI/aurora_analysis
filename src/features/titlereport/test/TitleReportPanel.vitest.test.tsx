@@ -87,7 +87,7 @@ describe("TitleReportPanel", () => {
     );
     expect(screen.getByText("Warranty Deed")).toBeVisible();
     expect(onReadyChange).toHaveBeenLastCalledWith(true);
-    fireEvent.click(screen.getByRole("button", { name: "View" }));
+    fireEvent.click(screen.getByRole("button", { name: "View Warranty Deed D-1" }));
     expect(onSession).toHaveBeenCalledWith("session-2");
     expect(screen.queryByRole("button", { name: "Regenerate" })).not.toBeInTheDocument();
   });
@@ -164,4 +164,30 @@ describe("TitleReportPanel", () => {
     expect(screen.getByRole("region", { name: "GENERATING TITLE REPORT" })).toBeVisible();
     expect(screen.getByRole("alert")).toHaveTextContent("Failed to get chain set.");
   });
+});
+
+it("identifies each record action while preserving visible text and its session destination", () => {
+  const onSession = vi.fn();
+  useTitleReportStore.getState().setReady(request, prepareTitleReport([{
+    title: "Main Chain",
+    records: [
+      { title: "Warranty Deed", code: "D-1", session: "session-1" },
+      { title: "Warranty Deed", code: "D-2", session: "session-2" },
+      { title: "Mortgage", code: "", session: "session-3" },
+      { title: "<b>Release</b>", code: "R & 3", session: "session-4" },
+      { title: "Missing Deed", code: "D-4", class: "deed", session: null },
+    ],
+  }], "Batch A"));
+  render(<TitleReportPanel onGenerated={vi.fn()} onReadyChange={vi.fn()} onSession={onSession} request={request} />);
+  const names = ["View Warranty Deed D-1", "View Warranty Deed D-2", "View Mortgage", "View Release R & 3"];
+  for (const [index, name] of names.entries()) {
+    const button = screen.getByRole("button", { name });
+    expect(button).toHaveTextContent(/^View$/);
+    expect(button).toHaveAttribute("type", "button");
+    fireEvent.click(button);
+    expect(onSession).toHaveBeenNthCalledWith(index + 1, `session-${index + 1}`);
+  }
+  expect(screen.getAllByRole("button")).toHaveLength(4);
+  expect(screen.queryByRole("button", { name: "View" })).not.toBeInTheDocument();
+  expect(screen.getByText("The deed record is not present.")).toBeVisible();
 });
